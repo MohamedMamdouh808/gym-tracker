@@ -15,8 +15,12 @@ const supabase = createClient(
 );
 
 // Gemini Setup
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+const geminiKey = process.env.GEMINI_API_KEY;
+if (!geminiKey) {
+  console.warn('⚠️ WARNING: GEMINI_API_KEY is not set in environment variables.');
+}
+const genAI = new GoogleGenerativeAI(geminiKey || 'dummy_key');
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 // Middleware
 app.use(cors());
