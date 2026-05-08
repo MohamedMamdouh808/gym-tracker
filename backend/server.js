@@ -355,8 +355,21 @@ app.post('/api/ai/coach', async (req, res) => {
     Focus only on what the user is asking right now.
     Format your response in concise markdown.`;
 
-    const result = await model.generateContent(prompt);
-    const responseText = result.response.text();
+    // Try gemini-1.5-flash first, fallback to gemini-pro if needed
+    let responseText;
+    try {
+      const result = await model.generateContent(prompt);
+      responseText = result.response.text();
+    } catch (modelErr) {
+      if (modelErr.message.includes('404') || modelErr.message.includes('not found')) {
+        console.log('Gemini 1.5 Flash not found, falling back to gemini-pro...');
+        const fallbackModel = genAI.getGenerativeModel({ model: "gemini-pro" });
+        const result = await fallbackModel.generateContent(prompt);
+        responseText = result.response.text();
+      } else {
+        throw modelErr;
+      }
+    }
 
     res.json({ success: true, advice: responseText });
   } catch (err) {
