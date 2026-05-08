@@ -473,7 +473,7 @@ select.input {
   min-height: 100vh;
   transition: all var(--transition);
   padding: var(--content-padding);
-  width: 100%;
+  width: calc(100% - var(--sidebar-w));
 }
 
 .sidebar {
@@ -503,6 +503,7 @@ select.input {
   .main-content {
     margin-left: 0 !important;
     padding: calc(var(--header-h) + 20px) 16px 40px 16px;
+    width: 100% !important;
   }
 
   .sidebar {

@@ -88,7 +88,7 @@ export default function Progress() {
   const diff = startW && endW ? (endW - startW).toFixed(1) : null;
 
   return (
-    <div className="main-content">
+    <div>
       <div style={{ marginBottom: '28px' }}>
         <h1 className="section-title">PROGRESS</h1>
         <p className="section-subtitle">Your fitness journey at a glance</p>

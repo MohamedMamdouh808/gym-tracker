@@ -58,7 +58,7 @@ export default function WorkoutLog() {
   }, {});
 
   return (
-    <div className="main-content">
+    <div>
       {ToastComponent}
       <div style={{ marginBottom: '28px' }}>
         <h1 className="section-title">WORKOUT LOG</h1>

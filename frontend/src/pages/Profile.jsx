@@ -12,7 +12,7 @@ export default function Profile() {
   };
 
   return (
-    <div className="main-content" style={{ maxWidth: '800px', margin: '0 auto' }}>
+    <div style={{ maxWidth: '800px', margin: '0 auto' }}>
       <header style={{ marginBottom: '40px' }}>
         <h1 style={{ 
           fontSize: 'min(32px, 8vw)', 

@@ -71,7 +71,7 @@ export default function MealTracker() {
   })).filter(g => g.meals.length > 0);
 
   return (
-    <div className="main-content">
+    <div>
       {ToastComponent}
       <div style={{ marginBottom: '28px' }}>
         <h1 className="section-title">MEAL TRACKER</h1>

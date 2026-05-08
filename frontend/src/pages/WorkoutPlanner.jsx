@@ -57,7 +57,7 @@ export default function WorkoutPlanner() {
   const dayPlans = plans.filter(p => p.day_of_week === selectedDay);
 
   return (
-    <div className="main-content">
+    <div>
       {ToastComponent}
       <div style={{ marginBottom: '28px' }}>
         <h1 className="section-title">WORKOUT PLANNER</h1>
