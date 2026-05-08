@@ -1,0 +1,193 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "name": "Athlete",
+      "email": "[EMAIL_ADDRESS]",
+      "created_at": "2026-03-14T18:16:40.920Z"
+    }
+  ],
+  "weight_logs": [
+    {
+      "id": 1,
+      "user_id": 1,
+      "date": "2026-03-14",
+      "weight": 78.5,
+      "body_fat": 18.2,
+      "created_at": "2026-03-14T18:43:11.145Z"
+    },
+    {
+      "id": 2,
+      "user_id": 1,
+      "date": "2026-03-14",
+      "weight": 77.5,
+      "body_fat": null,
+      "created_at": "2026-03-14T18:43:11.258Z"
+    },
+    {
+      "id": 3,
+      "user_id": 1,
+      "date": "2026-03-14",
+      "weight": 78.5,
+      "body_fat": 18.2,
+      "created_at": "2026-03-14T18:47:37.532Z"
+    },
+    {
+      "id": 4,
+      "user_id": 1,
+      "date": "2026-03-14",
+      "weight": 77.5,
+      "body_fat": null,
+      "created_at": "2026-03-14T18:47:38.102Z"
+    }
+  ],
+  "meals": [
+    {
+      "id": 1,
+      "user_id": 1,
+      "date": "2026-03-14",
+      "meal_type": "Breakfast",
+      "food_name": "Oats",
+      "calories": 389,
+      "protein": 17,
+      "carbs": 66,
+      "fat": 7,
+      "created_at": "2026-03-14T18:43:11.163Z"
+    },
+    {
+      "id": 2,
+      "user_id": 1,
+      "date": "2026-03-14",
+      "meal_type": "Lunch",
+      "food_name": "Chicken",
+      "calories": 250,
+      "protein": 45,
+      "carbs": 5,
+      "fat": 6,
+      "created_at": "2026-03-14T18:43:11.168Z"
+    },
+    {
+      "id": 3,
+      "user_id": 1,
+      "date": "2026-03-14",
+      "meal_type": "Snack",
+      "food_name": "Protein Shake",
+      "calories": 250,
+      "protein": 30,
+      "carbs": 15,
+      "fat": 5,
+      "created_at": "2026-03-14T18:43:11.268Z"
+    },
+    {
+      "id": 4,
+      "user_id": 1,
+      "date": "2026-03-14",
+      "meal_type": "Breakfast",
+      "food_name": "Oats",
+      "calories": 389,
+      "protein": 17,
+      "carbs": 66,
+      "fat": 7,
+      "created_at": "2026-03-14T18:47:37.561Z"
+    },
+    {
+      "id": 5,
+      "user_id": 1,
+      "date": "2026-03-14",
+      "meal_type": "Lunch",
+      "food_name": "Chicken",
+      "calories": 250,
+      "protein": 45,
+      "carbs": 5,
+      "fat": 6,
+      "created_at": "2026-03-14T18:47:37.572Z"
+    },
+    {
+      "id": 6,
+      "user_id": 1,
+      "date": "2026-03-14",
+      "meal_type": "Snack",
+      "food_name": "Protein Shake",
+      "calories": 250,
+      "protein": 30,
+      "carbs": 15,
+      "fat": 5,
+      "created_at": "2026-03-14T18:47:38.110Z"
+    }
+  ],
+  "workout_plans": [],
+  "workout_logs": [
+    {
+      "id": 1,
+      "user_id": 1,
+      "date": "2026-03-14",
+      "exercise": "Deadlift",
+      "sets": 3,
+      "reps": 5,
+      "weight": 120,
+      "completed": 1,
+      "created_at": "2026-03-14T18:43:11.195Z"
+    },
+    {
+      "id": 2,
+      "user_id": 1,
+      "date": "2026-03-14",
+      "exercise": "Squat",
+      "sets": 4,
+      "reps": 6,
+      "weight": 100,
+      "completed": 1,
+      "created_at": "2026-03-14T18:43:11.200Z"
+    },
+    {
+      "id": 3,
+      "user_id": 1,
+      "date": "2026-03-14",
+      "exercise": "Pull-ups",
+      "sets": 3,
+      "reps": 10,
+      "weight": 0,
+      "completed": 1,
+      "created_at": "2026-03-14T18:43:11.273Z"
+    },
+    {
+      "id": 4,
+      "user_id": 1,
+      "date": "2026-03-14",
+      "exercise": "Deadlift",
+      "sets": 3,
+      "reps": 5,
+      "weight": 120,
+      "completed": 1,
+      "created_at": "2026-03-14T18:47:37.655Z"
+    },
+    {
+      "id": 5,
+      "user_id": 1,
+      "date": "2026-03-14",
+      "exercise": "Squat",
+      "sets": 4,
+      "reps": 6,
+      "weight": 100,
+      "completed": 1,
+      "created_at": "2026-03-14T18:47:37.751Z"
+    },
+    {
+      "id": 6,
+      "user_id": 1,
+      "date": "2026-03-14",
+      "exercise": "Pull-ups",
+      "sets": 3,
+      "reps": 10,
+      "weight": 0,
+      "completed": 1,
+      "created_at": "2026-03-14T18:47:38.116Z"
+    }
+  ],
+  "_nextId": {
+    "weight_logs": 5,
+    "meals": 7,
+    "workout_plans": 6,
+    "workout_logs": 7
+  }
+}

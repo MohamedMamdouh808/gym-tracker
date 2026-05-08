@@ -1,0 +1,75 @@
+{
+  "name": "GymTracker - Weight Tracking Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "weight-tracking",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "wh-weight",
+      "name": "Webhook: Weight Submitted",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json.body || $input.first().json;\nconst weight = parseFloat(data.weight);\nconst date = data.date;\nconst userId = data.user_id || 1;\n\nif (!weight || isNaN(weight)) {\n  throw new Error('Invalid weight value');\n}\n\nreturn [{ json: { user_id: userId, date, weight, body_fat: data.body_fat, processed_at: new Date().toISOString() } }];"
+      },
+      "id": "validate-weight",
+      "name": "Validate & Parse Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:5000/api/weight/stats",
+        "authentication": "none",
+        "options": {
+          "queryParameters": {
+            "parameters": [
+              { "name": "user_id", "value": "={{ $json.user_id }}" }
+            ]
+          }
+        }
+      },
+      "id": "get-weight-stats",
+      "name": "Get Weight Stats",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const stats = $input.first().json;\nconst prevWeight = stats?.data?.latest?.weight;\nconst currentWeight = $('Validate & Parse Data').first().json.weight;\nconst weekAvg = stats?.data?.weekAvg?.avg_weight;\n\nconst change = prevWeight ? (currentWeight - prevWeight).toFixed(2) : 0;\nconst trend = change < 0 ? 'LOSING' : change > 0 ? 'GAINING' : 'MAINTAINING';\n\nreturn [{\n  json: {\n    ...$('Validate & Parse Data').first().json,\n    weight_change: parseFloat(change),\n    trend,\n    weekly_avg: weekAvg ? parseFloat(weekAvg.toFixed(2)) : currentWeight,\n    summary: `Weight logged: ${currentWeight}kg (${change > 0 ? '+' : ''}${change}kg). Trend: ${trend}. Weekly avg: ${weekAvg ? weekAvg.toFixed(1) : 'N/A'}kg`\n  }\n}];"
+      },
+      "id": "calculate-metrics",
+      "name": "Calculate Weekly Metrics",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, message: 'Weight tracking workflow executed', data: $json }) }}"
+      },
+      "id": "respond",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1050, 300]
+    }
+  ],
+  "connections": {
+    "Webhook: Weight Submitted": { "main": [[{ "node": "Validate & Parse Data", "type": "main", "index": 0 }]] },
+    "Validate & Parse Data": { "main": [[{ "node": "Get Weight Stats", "type": "main", "index": 0 }]] },
+    "Get Weight Stats": { "main": [[{ "node": "Calculate Weekly Metrics", "type": "main", "index": 0 }]] },
+    "Calculate Weekly Metrics": { "main": [[{ "node": "Respond to Webhook", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "tags": [{ "name": "GymTracker" }]
+}

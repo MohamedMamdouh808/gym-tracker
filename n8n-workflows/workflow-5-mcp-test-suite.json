@@ -1,0 +1,174 @@
+{
+  "name": "GymTracker AI — MCP Automated Test Suite",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "gymtracker-test",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "n1",
+      "name": "Webhook: Run Tests",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const today = new Date().toISOString().split('T')[0];\nreturn [{ json: { base: 'http://localhost:5000', today, uid: 8000 + Math.floor(Math.random()*999), ts: Date.now() } }];"
+      },
+      "id": "n2",
+      "name": "Init",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [400, 300]
+    },
+    {
+      "parameters": { "url": "http://localhost:5000/api/health" },
+      "id": "n3",
+      "name": "T1 Health",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [600, 100]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:5000/api/weight",
+        "method": "POST",
+        "sendBody": true,
+        "bodyParameters": { "parameters": [
+          {"name":"date","value":"={{ $('Init').item.json.today }}"},
+          {"name":"weight","value":"76.5"},
+          {"name":"body_fat","value":"17.8"},
+          {"name":"user_id","value":"={{ $('Init').item.json.uid }}"}
+        ]}
+      },
+      "id": "n4",
+      "name": "T2 Post Weight",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [600, 200]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:5000/api/meals",
+        "method": "POST",
+        "sendBody": true,
+        "bodyParameters": { "parameters": [
+          {"name":"date","value":"={{ $('Init').item.json.today }}"},
+          {"name":"meal_type","value":"Breakfast"},
+          {"name":"food_name","value":"MCP Test Oats"},
+          {"name":"calories","value":"389"},
+          {"name":"protein","value":"17"},
+          {"name":"carbs","value":"66"},
+          {"name":"fat","value":"7"},
+          {"name":"user_id","value":"={{ $('Init').item.json.uid }}"}
+        ]}
+      },
+      "id": "n5",
+      "name": "T3 Post Meal",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [600, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:5000/api/workout-plan",
+        "method": "POST",
+        "sendBody": true,
+        "bodyParameters": { "parameters": [
+          {"name":"day_of_week","value":"Monday"},
+          {"name":"exercise","value":"MCP Bench Press"},
+          {"name":"sets","value":"4"},
+          {"name":"reps","value":"8"},
+          {"name":"user_id","value":"={{ $('Init').item.json.uid }}"}
+        ]}
+      },
+      "id": "n6",
+      "name": "T4 Post Plan",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [600, 400]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:5000/api/workout-log",
+        "method": "POST",
+        "sendBody": true,
+        "bodyParameters": { "parameters": [
+          {"name":"date","value":"={{ $('Init').item.json.today }}"},
+          {"name":"exercise","value":"MCP Squat"},
+          {"name":"sets","value":"3"},
+          {"name":"reps","value":"10"},
+          {"name":"weight","value":"100"},
+          {"name":"completed","value":"1"},
+          {"name":"user_id","value":"={{ $('Init').item.json.uid }}"}
+        ]}
+      },
+      "id": "n7",
+      "name": "T5 Post Log",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [600, 500]
+    },
+    {
+      "parameters": {
+        "url": "=http://localhost:5000/api/dashboard?user_id={{ $('Init').item.json.uid }}"
+      },
+      "id": "n8",
+      "name": "T6 Dashboard",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [800, 300]
+    },
+    {
+      "parameters": {
+        "url": "=http://localhost:5000/api/reports/weekly?user_id={{ $('Init').item.json.uid }}"
+      },
+      "id": "n9",
+      "name": "T7 Weekly Report",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1000, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const h = $('T1 Health').first().json;\nconst w = $('T2 Post Weight').first().json;\nconst m = $('T3 Post Meal').first().json;\nconst p = $('T4 Post Plan').first().json;\nconst l = $('T5 Post Log').first().json;\nconst d = $('T6 Dashboard').first().json;\nconst r = $('T7 Weekly Report').first().json;\n\nconst tests = [\n  { name: 'Health: status=ok', pass: h?.status === 'ok' },\n  { name: 'Health: service=GymTracker AI', pass: h?.service === 'GymTracker AI' },\n  { name: 'Weight: record created', pass: !!w?.data?.id },\n  { name: 'Weight: value=76.5', pass: w?.data?.weight === 76.5 },\n  { name: 'Weight: body_fat=17.8', pass: w?.data?.body_fat === 17.8 },\n  { name: 'Meal: record created', pass: !!m?.data?.id },\n  { name: 'Meal: calories=389', pass: m?.data?.calories === 389 },\n  { name: 'Meal: protein=17', pass: m?.data?.protein === 17 },\n  { name: 'Plan: record created', pass: !!p?.data?.id },\n  { name: 'Plan: exercise stored', pass: p?.data?.exercise === 'MCP Bench Press' },\n  { name: 'Log: record created', pass: !!l?.data?.id },\n  { name: 'Log: weight=100', pass: l?.data?.weight === 100 },\n  { name: 'Log: completed=1', pass: l?.data?.completed === 1 },\n  { name: 'Dashboard: has latestWeight', pass: !!d?.data?.latestWeight },\n  { name: 'Dashboard: caloriesToday>0', pass: (d?.data?.caloriesToday || 0) > 0 },\n  { name: 'Dashboard: weekWorkouts>=1', pass: (d?.data?.weekWorkouts || 0) >= 1 },\n  { name: 'Dashboard: weightHistory array', pass: Array.isArray(d?.data?.weightHistory) },\n  { name: 'Report: workoutsCompleted>=1', pass: (r?.data?.workoutsCompleted || 0) >= 1 },\n  { name: 'Report: avgDailyCalories>0', pass: (r?.data?.avgDailyCalories || 0) > 0 },\n  { name: 'Report: weightChange present', pass: !!r?.data?.weightChange },\n];\n\nconst passed = tests.filter(t => t.pass).length;\nconst failed = tests.filter(t => !t.pass).length;\nconst score = Math.round(passed / tests.length * 100);\n\nreturn [{\n  json: {\n    suite: 'GymTracker AI — n8n MCP Test Suite',\n    timestamp: new Date().toISOString(),\n    passed, failed,\n    total: tests.length,\n    score: score + '%',\n    status: score === 100 ? 'ALL PASS 🏆' : 'PARTIAL ⚠️',\n    tests\n  }\n}];"
+      },
+      "id": "n10",
+      "name": "Evaluate Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1200, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json, null, 2) }}"
+      },
+      "id": "n11",
+      "name": "Return Report",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1400, 300]
+    }
+  ],
+  "connections": {
+    "Webhook: Run Tests": { "main": [[{ "node": "Init", "type": "main", "index": 0 }]] },
+    "Init": { "main": [[
+      { "node": "T1 Health", "type": "main", "index": 0 },
+      { "node": "T2 Post Weight", "type": "main", "index": 0 },
+      { "node": "T3 Post Meal", "type": "main", "index": 0 },
+      { "node": "T4 Post Plan", "type": "main", "index": 0 },
+      { "node": "T5 Post Log", "type": "main", "index": 0 }
+    ]] },
+    "T2 Post Weight": { "main": [[{ "node": "T6 Dashboard", "type": "main", "index": 0 }]] },
+    "T6 Dashboard": { "main": [[{ "node": "T7 Weekly Report", "type": "main", "index": 0 }]] },
+    "T7 Weekly Report": { "main": [[{ "node": "Evaluate Results", "type": "main", "index": 0 }]] },
+    "T1 Health": { "main": [[{ "node": "Evaluate Results", "type": "main", "index": 0 }]] },
+    "Evaluate Results": { "main": [[{ "node": "Return Report", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "tags": [{ "name": "GymTracker" }, { "name": "Testing" }]
+}

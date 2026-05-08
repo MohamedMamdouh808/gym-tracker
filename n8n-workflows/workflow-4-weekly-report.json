@@ -1,0 +1,31 @@
+{
+  "name": "GymTracker - Weekly Fitness Report",
+  "nodes": [
+    {
+      "parameters": { "rule": { "interval": [{ "field": "cronExpression", "expression": "0 21 * * 0" }] } },
+      "id": "cron-weekly", "name": "Cron: Sunday 9PM",
+      "type": "n8n-nodes-base.scheduleTrigger", "typeVersion": 1, "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:5000/api/reports/weekly?user_id=1",
+        "authentication": "none"
+      },
+      "id": "get-report", "name": "Get Weekly Stats",
+      "type": "n8n-nodes-base.httpRequest", "typeVersion": 4, "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json?.data || {};\nconst weightChange = data.weightChange || {};\nconst startW = weightChange.start_weight || 0;\nconst endW = weightChange.end_weight || 0;\nconst diff = startW && endW ? (endW - startW).toFixed(1) : 'N/A';\nconst direction = diff < 0 ? 'lost' : diff > 0 ? 'gained' : 'maintained';\n\nconst report = [\n  '=== GYMTRACKER WEEKLY REPORT ===',\n  'Period: Last 7 days',\n  '',\n  'WEIGHT:',\n  '  Start: ' + (startW || 'N/A') + ' kg',\n  '  End: ' + (endW || 'N/A') + ' kg',\n  '  Change: ' + (diff !== 'N/A' ? (diff > 0 ? '+' : '') + diff + ' kg ' + direction : 'No data'),\n  '',\n  'WORKOUTS: ' + (data.workoutsCompleted || 0) + ' sessions completed',\n  'AVG CALORIES: ' + (data.avgDailyCalories || 0) + ' kcal/day',\n  '',\n  'Generated: ' + new Date().toISOString()\n].join('\\n');\n\nreturn [{ json: { report_text: report, raw_data: data, generated_at: new Date().toISOString() } }];"
+      },
+      "id": "generate-report", "name": "Generate Report",
+      "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [650, 300]
+    }
+  ],
+  "connections": {
+    "Cron: Sunday 9PM": { "main": [[{ "node": "Get Weekly Stats", "type": "main", "index": 0 }]] },
+    "Get Weekly Stats": { "main": [[{ "node": "Generate Report", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "tags": [{ "name": "GymTracker" }]
+}

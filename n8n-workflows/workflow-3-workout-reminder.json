@@ -1,0 +1,39 @@
+{
+  "name": "GymTracker - Daily Workout Reminder",
+  "nodes": [
+    {
+      "parameters": { "rule": { "interval": [{ "field": "cronExpression", "expression": "0 18 * * *" }] } },
+      "id": "cron-reminder", "name": "Cron: 6PM Daily",
+      "type": "n8n-nodes-base.scheduleTrigger", "typeVersion": 1, "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];\nconst today = days[new Date().getDay()];\nreturn [{ json: { today, user_id: 1, check_time: new Date().toISOString() } }];"
+      },
+      "id": "get-day", "name": "Get Today",
+      "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "url": "=http://localhost:5000/api/workout-plan?user_id=1&day_of_week={{$json.today}}",
+        "authentication": "none"
+      },
+      "id": "get-plan", "name": "Get Today's Plan",
+      "type": "n8n-nodes-base.httpRequest", "typeVersion": 4, "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const plan = $input.first().json?.data || [];\nconst today = $('Get Today').first().json.today;\nif (plan.length === 0) {\n  return [{ json: { reminder: false, message: 'Rest day today - ' + today, exercises: [] } }];\n}\nconst exercises = plan.map(p => p.exercise + ' (' + p.sets + 'x' + p.reps + ')').join(', ');\nreturn [{ json: { reminder: true, day: today, exercise_count: plan.length, exercises_list: exercises, message: 'Time to workout! ' + plan.length + ' exercises planned for ' + today + ': ' + exercises, sent_at: new Date().toISOString() } }];"
+      },
+      "id": "build-reminder", "name": "Build Reminder",
+      "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [850, 300]
+    }
+  ],
+  "connections": {
+    "Cron: 6PM Daily": { "main": [[{ "node": "Get Today", "type": "main", "index": 0 }]] },
+    "Get Today": { "main": [[{ "node": "Get Today's Plan", "type": "main", "index": 0 }]] },
+    "Get Today's Plan": { "main": [[{ "node": "Build Reminder", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "tags": [{ "name": "GymTracker" }]
+}
