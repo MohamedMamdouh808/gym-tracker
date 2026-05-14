@@ -3,6 +3,7 @@ import { Doughnut } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { mealsAPI, waterAPI } from '../utils/api';
 import { useToast } from '../hooks/useToast';
+import DeleteButton from '../components/DeleteButton';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -122,7 +123,6 @@ export default function MealTracker() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Delete this meal?')) return;
     try {
       await mealsAPI.delete(id);
       showToast('Meal deleted');
@@ -153,7 +153,7 @@ export default function MealTracker() {
   })).filter(g => g.meals.length > 0);
 
   return (
-    <div>
+    <div className="page-enter">
       {ToastComponent}
       <div style={{ marginBottom: '28px' }}>
         <h1 className="section-title">MEAL TRACKER</h1>
@@ -303,7 +303,7 @@ export default function MealTracker() {
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                       <div style={{ display: 'flex', gap: '4px' }}>
                         <button onClick={() => handleEdit(m)} className="btn btn-ghost" style={{ padding: '4px 8px', fontSize: '10px' }}>EDIT</button>
-                        <button onClick={() => handleDelete(m.id)} className="btn btn-ghost" style={{ padding: '4px 8px', fontSize: '10px', color: 'var(--red)' }}>DEL</button>
+                        <DeleteButton onDelete={() => handleDelete(m.id)} label="DEL" />
                       </div>
                       <div>
                         <div style={{ fontWeight: '500', fontSize: '13px' }}>{m.food_name}</div>

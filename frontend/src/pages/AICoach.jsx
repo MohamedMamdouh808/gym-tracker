@@ -1,13 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { aiAPI, dashboardAPI } from '../utils/api';
+import { aiAPI, dashboardAPI, inbodyAPI } from '../utils/api';
 
 export default function AICoach() {
   const [messages, setMessages] = useState([
-    { role: 'ai', text: "Hello! I'm your GymTracker Pro Coach. I have access to your stats and can provide personalized advice on training, nutrition, and recovery. What's on your mind?" }
+    { role: 'ai', text: "Hello! I'm your GymTracker Pro Coach. I have full access to your body composition data from InBody scans, weight logs, meals, and workouts. Ask me anything for personalized advice based on your actual numbers!" }
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState(null);
+  const [latestScan, setLatestScan] = useState(null);
   const chatEndRef = useRef(null);
 
   const suggestions = [
@@ -25,6 +26,7 @@ export default function AICoach() {
 
   useEffect(() => {
     dashboardAPI.get().then(res => setStats(res.data)).catch(() => {});
+    inbodyAPI.latest().then(res => setLatestScan(res.data)).catch(() => {});
   }, []);
 
   const handleSend = async (msg = null) => {
@@ -83,10 +85,30 @@ export default function AICoach() {
                   <span style={{ color: 'var(--text-muted)' }}>Workouts / Week</span>
                   <span style={{ fontWeight: '600' }}>{stats.weekWorkouts || 0}</span>
                 </div>
-                <div className="flex justify-between items-center" style={{ fontSize: '12px' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>Muscle Focus</span>
-                  <span style={{ color: 'var(--accent)', fontWeight: '600' }}>{stats.muscleFocus?.[0]?.muscle || 'Focusing...'}</span>
-                </div>
+                {latestScan && (
+                  <>
+                    <div style={{ borderTop: '1px solid var(--border)', marginTop: '8px', paddingTop: '8px' }} />
+                    <div style={{ fontSize: '10px', fontWeight: '700', color: 'var(--accent)', letterSpacing: '0.08em', marginBottom: '4px' }}>📷 INBODY SCAN · {latestScan.date}</div>
+                    <div className="flex justify-between items-center" style={{ fontSize: '12px' }}>
+                      <span style={{ color: 'var(--text-muted)' }}>Body Fat %</span>
+                      <span style={{ fontWeight: '600', color: '#ff9f43' }}>{latestScan.body_fat_percent}%</span>
+                    </div>
+                    <div className="flex justify-between items-center" style={{ fontSize: '12px' }}>
+                      <span style={{ color: 'var(--text-muted)' }}>Muscle Mass</span>
+                      <span style={{ fontWeight: '600', color: 'var(--green)' }}>{latestScan.skeletal_muscle_mass} kg</span>
+                    </div>
+                    <div className="flex justify-between items-center" style={{ fontSize: '12px' }}>
+                      <span style={{ color: 'var(--text-muted)' }}>BMR</span>
+                      <span style={{ fontWeight: '600' }}>{latestScan.bmr} kcal</span>
+                    </div>
+                    <div className="flex justify-between items-center" style={{ fontSize: '12px' }}>
+                      <span style={{ color: 'var(--text-muted)' }}>Visceral Fat</span>
+                      <span style={{ fontWeight: '600', color: latestScan.visceral_fat_level > 10 ? '#ff4757' : 'var(--green)' }}>
+                        Lvl {latestScan.visceral_fat_level} {latestScan.visceral_fat_level > 10 ? '⚠️' : '✓'}
+                      </span>
+                    </div>
+                  </>
+                )}
               </>
             ) : <div className="skeleton" style={{ height: '80px' }} />}
           </div>
@@ -101,6 +123,11 @@ export default function AICoach() {
             <button onClick={() => handleSend("Review my nutrition logs from this week. Am I hitting my macros effectively?")} className="btn btn-ghost" style={{ justifyContent: 'flex-start', fontSize: '11px', textAlign: 'left' }}>
               🥗 Macro Optimization
             </button>
+            {latestScan && (
+              <button onClick={() => handleSend(`Analyze my InBody scan from ${latestScan.date}. My body fat is ${latestScan.body_fat_percent}%, muscle mass is ${latestScan.skeletal_muscle_mass}kg, BMR is ${latestScan.bmr}kcal, and visceral fat level is ${latestScan.visceral_fat_level}. Give me a complete action plan to improve my body composition.`)} className="btn btn-ghost" style={{ justifyContent: 'flex-start', fontSize: '11px', textAlign: 'left', borderColor: 'rgba(232,255,71,0.2)' }}>
+                📷 Analyze My InBody Results
+              </button>
+            )}
           </div>
         </div>
 

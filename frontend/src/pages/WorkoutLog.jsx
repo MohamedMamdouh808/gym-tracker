@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { workoutLogAPI, workoutPlanAPI } from '../utils/api';
 import { useToast } from '../hooks/useToast';
+import DeleteButton from '../components/DeleteButton';
 
 const DAYS_MAP = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -67,7 +68,6 @@ export default function WorkoutLog() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Delete this log?')) return;
     try {
       await workoutLogAPI.delete(id);
       showToast('Log deleted');
@@ -94,7 +94,7 @@ export default function WorkoutLog() {
   }, {});
 
   return (
-    <div>
+    <div className="page-enter">
       {ToastComponent}
       <div style={{ marginBottom: '28px' }}>
         <h1 className="section-title">WORKOUT LOG</h1>
@@ -240,7 +240,7 @@ export default function WorkoutLog() {
                               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                                 <div style={{ display: 'flex', gap: '2px' }}>
                                   <button onClick={() => handleEdit(log)} className="btn btn-ghost" style={{ padding: '2px 6px', fontSize: '9px', opacity: 0.8 }}>Edit</button>
-                                  <button onClick={() => handleDelete(log.id)} className="btn btn-ghost" style={{ padding: '2px 6px', fontSize: '9px', opacity: 0.8, color: 'var(--red)' }}>Del</button>
+                                  <DeleteButton onDelete={() => handleDelete(log.id)} />
                                 </div>
                                 {log.exercise}
                               </div>
@@ -295,4 +295,3 @@ function RestTimer() {
     </div>
   );
 }
-

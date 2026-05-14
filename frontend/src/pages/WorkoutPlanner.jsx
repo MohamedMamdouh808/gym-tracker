@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { workoutPlanAPI } from '../utils/api';
 import { useToast } from '../hooks/useToast';
+import DeleteButton from '../components/DeleteButton';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
@@ -170,7 +171,7 @@ export default function WorkoutPlanner() {
                       </div>
                       <div style={{ display: 'flex', gap: '4px' }}>
                         <button onClick={() => handleEdit(plan)} className="btn btn-ghost" style={{ padding: '5px 10px', fontSize: '11px' }}>Edit</button>
-                        <button onClick={() => handleDelete(plan.id)} className="btn btn-danger" style={{ padding: '5px 10px', fontSize: '11px' }}>✕</button>
+                        <DeleteButton onDelete={() => handleDelete(plan.id)} label="✕" />
                       </div>
                     </div>
                   ))}

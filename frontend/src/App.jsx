@@ -12,6 +12,7 @@ import Login from './pages/Login';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
 import HealthCalculators from './pages/HealthCalculators';
+import InBodyScan from './pages/InBodyScan';
 
 const PAGES = {
   dashboard: Dashboard,
@@ -22,6 +23,7 @@ const PAGES = {
   progress: Progress,
   'ai-coach': AICoach,
   calculators: HealthCalculators,
+  inbody: InBodyScan,
   profile: Profile,
 };
 

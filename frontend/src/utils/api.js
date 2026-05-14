@@ -74,4 +74,14 @@ export const aiAPI = {
   coach: (data) => API.post('/api/ai/coach', data),
 };
 
+export const inbodyAPI = {
+  latest: () => API.get('/api/inbody/latest'),
+  history: (params) => API.get('/api/inbody/history', { params }),
+  delete: (id) => API.delete(`/api/inbody/${id}`),
+  update: (id, data) => API.patch(`/api/inbody/${id}`, data),
+  scan: (formData) => API.post('/api/inbody/scan', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+};
+
 export default API;

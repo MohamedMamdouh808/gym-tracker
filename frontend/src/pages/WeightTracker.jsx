@@ -3,6 +3,7 @@ import { Line } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Filler } from 'chart.js';
 import { weightAPI } from '../utils/api';
 import { useToast } from '../hooks/useToast';
+import DeleteButton from '../components/DeleteButton';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Filler);
 
@@ -71,7 +72,6 @@ export default function WeightTracker() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Delete this entry?')) return;
     try {
       await weightAPI.delete(id);
       showToast('Entry deleted');
@@ -124,7 +124,7 @@ export default function WeightTracker() {
   };
 
   return (
-    <div>
+    <div className="page-enter">
       {ToastComponent}
       <div style={{ marginBottom: '28px' }}>
         <h1 className="section-title">WEIGHT TRACKER</h1>
@@ -235,7 +235,7 @@ export default function WeightTracker() {
                         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                           <div style={{ display: 'flex', gap: '2px' }}>
                             <button onClick={() => handleEdit(log)} className="btn btn-ghost" style={{ padding: '2px 6px', fontSize: '9px', opacity: 0.8 }}>Edit</button>
-                            <button onClick={() => handleDelete(log.id)} className="btn btn-ghost" style={{ padding: '2px 6px', fontSize: '9px', opacity: 0.8, color: 'var(--red)' }}>Del</button>
+                            <DeleteButton onDelete={() => handleDelete(log.id)} />
                           </div>
                           {log.date}
                         </div>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Line, Bar } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler } from 'chart.js';
 import { weightAPI, mealsAPI, workoutLogAPI, reportsAPI, prAPI } from '../utils/api';
+import DeleteButton from '../components/DeleteButton';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler);
 
@@ -57,6 +58,13 @@ export default function Progress() {
     try {
       await prAPI.update(prForm);
       setPrForm({ exercise: '', weight: '', date: new Date().toISOString().split('T')[0] });
+      fetchData();
+    } catch {}
+  };
+
+  const handlePrDelete = async (id) => {
+    try {
+      await prAPI.delete(id);
       fetchData();
     } catch {}
   };
@@ -310,7 +318,10 @@ export default function Progress() {
           <div style={{ maxHeight: '240px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {prs.length > 0 ? prs.map(pr => (
               <div key={pr.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: 'var(--bg-elevated)', borderRadius: '8px', border: '1px solid var(--border)' }}>
-                <span style={{ fontWeight: '600', fontSize: '13px' }}>{pr.exercise}</span>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <DeleteButton onDelete={() => handlePrDelete(pr.id)} />
+                  <span style={{ fontWeight: '600', fontSize: '13px' }}>{pr.exercise}</span>
+                </div>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
                   <span style={{ fontFamily: 'var(--font-display)', fontSize: '18px', color: 'var(--accent)' }}>{pr.weight}</span>
                   <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>KG</span>

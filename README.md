@@ -4,11 +4,12 @@ GymTracker Pro is a premium, high-performance fitness ecosystem designed for ser
 
 ## ✨ Pro Features
 
-- **🚀 Ultra-Fast AI Coach**: Powered by **Groq (Llama 3.3 70B)** for near-instant personalized training and nutrition advice. (Fallback to Gemini 1.5 Pro).
+- **🚀 Ultra-Fast AI Coach**: Powered by **Groq (Llama 3.3 70B)** for near-instant personalized training and nutrition advice. Now with **historical awareness** of your last 10 body composition scans for deep trend analysis.
+- **📸 AI InBody Scanner**: Upload photos of your InBody reports. Our AI (Gemini Vision) automatically extracts 20+ metrics including skeletal muscle mass, body fat %, BMR, and segmental muscle analysis.
 - **📅 Date-Aware Meal Tracking**: Full historical tracking. Log and view meals for any date, with dynamic macro charts and water intake integration.
 - **🎨 Multi-Theme Engine**: Choose your aesthetic—**Stone & Gold**, **Deep Ocean**, or **Midnight Purple**. Themes persist across sessions.
-- **🔥 Gamified Progress**: Track your training streaks, earn achievements (Hydrated, PR King, Macro Pro), and visualize consistency with activity heatmaps.
-- **📊 Advanced Analytics**: Interactive Chart.js visualizations for weight trends, caloric history, and macronutrient distribution.
+- **🔥 Standardized Delete UX**: A unified, non-blocking deletion experience with safety confirmations across all modules (Weight, Meals, Workouts, InBody).
+- **📊 Advanced Analytics**: Interactive Chart.js visualizations for weight trends, caloric history, and body composition changes.
 - **🏋️ Training Utilities**: Built-in 1RM (One-Rep Max) calculator and integrated rest timers within workout logs.
 - **🔒 Enterprise Security**: Fully secure authentication and data persistence powered by **Supabase**.
 - **📱 Responsive Command Center**: A unified dashboard providing a "Today's Fuel" summary and recent activity at a glance.
@@ -81,7 +82,9 @@ GymTracker Pro is a premium, high-performance fitness ecosystem designed for ser
 | `GET` | `/api/meals` | Date-filtered meal history |
 | `POST` | `/api/meals` | Log meal with automatic macro rounding |
 | `GET` | `/api/water` | Daily hydration tracking |
-| `POST` | `/api/ai/coach` | Ultra-fast Groq-powered coaching session |
+| `POST` | `/api/ai/coach` | Ultra-fast Groq-powered coaching session with trend analysis |
+| `POST` | `/api/inbody/scan` | AI extraction from InBody report photos |
+| `GET` | `/api/inbody/history` | Full historical body composition data |
 | `GET` | `/api/prs` | Personal Records management |
 
 ## ☁️ Deployment

@@ -8,6 +8,7 @@ const navItems = [
   { id: 'workout-log', label: 'Workout Log', icon: '◪' },
   { id: 'progress', label: 'Progress', icon: '◬' },
   { id: 'calculators', label: 'Calculators', icon: '⚡' },
+  { id: 'inbody', label: 'InBody Scan', icon: '📷' },
   { id: 'ai-coach', label: 'AI Coach', icon: '✨' },
 ];
 
