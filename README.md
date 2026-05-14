@@ -1,19 +1,17 @@
-# 🏋️ GymTracker AI — Complete Fitness System
+# 🏋️ GymTracker Pro — Elite AI Fitness System
 
-GymTracker AI is a premium, full-stack fitness tracking application designed for performance-focused athletes. It combines data-driven progress tracking with a personalized AI Fitness Coach.
+GymTracker Pro is a premium, high-performance fitness ecosystem designed for serious athletes. It combines ultra-fast AI coaching with precision data tracking, all wrapped in a sleek, customizable "Stone & Gold" glassmorphic interface.
 
-![GymTracker Dashboard](https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=1200)
+## ✨ Pro Features
 
-## ✨ Key Features
-
-- **📊 Intelligent Dashboard**: Real-time overview of your weight progress, daily calories, and weekly workout consistency.
-- **⚖️ Precision Weight Tracking**: Monitor your weight and body fat percentage with dynamic charting and automated trend analysis.
-- **🍎 Advanced Meal Logging**: Track calories and macronutrients (Protein, Carbs, Fat) with quick-fill presets for common foods.
-- **📅 Smart Workout Planner**: Build your weekly training program and stay organized with day-by-day exercise management.
-- **📝 Performance Logging**: Record your actual sets, reps, and weights to calculate training volume and track strength gains.
-- **🤖 AI Fitness Coach**: A personalized AI assistant powered by Google Gemini to analyze your data and provide tailored fitness advice.
-- **🔒 Secure Authentication**: Robust user management powered by Supabase Auth.
-- **📱 Fully Responsive**: Optimized for desktop and mobile, ensuring you can log your data anytime, anywhere.
+- **🚀 Ultra-Fast AI Coach**: Powered by **Groq (Llama 3.3 70B)** for near-instant personalized training and nutrition advice. (Fallback to Gemini 1.5 Pro).
+- **📅 Date-Aware Meal Tracking**: Full historical tracking. Log and view meals for any date, with dynamic macro charts and water intake integration.
+- **🎨 Multi-Theme Engine**: Choose your aesthetic—**Stone & Gold**, **Deep Ocean**, or **Midnight Purple**. Themes persist across sessions.
+- **🔥 Gamified Progress**: Track your training streaks, earn achievements (Hydrated, PR King, Macro Pro), and visualize consistency with activity heatmaps.
+- **📊 Advanced Analytics**: Interactive Chart.js visualizations for weight trends, caloric history, and macronutrient distribution.
+- **🏋️ Training Utilities**: Built-in 1RM (One-Rep Max) calculator and integrated rest timers within workout logs.
+- **🔒 Enterprise Security**: Fully secure authentication and data persistence powered by **Supabase**.
+- **📱 Responsive Command Center**: A unified dashboard providing a "Today's Fuel" summary and recent activity at a glance.
 
 ## 🎨 Tech Stack
 
@@ -22,8 +20,8 @@ GymTracker AI is a premium, full-stack fitness tracking application designed for
 | **Frontend** | React 18, Vite, Chart.js 4, Supabase Auth UI |
 | **Backend** | Node.js (Express), Serverless Functions (Vercel) |
 | **Database** | Supabase (PostgreSQL) |
-| **AI Engine** | Google Gemini 1.5 Flash |
-| **Styling** | Vanilla CSS with Modern Variables & Glassmorphism |
+| **AI Engine** | Groq (Llama 3.3) & Google Gemini 1.5 Pro |
+| **Styling** | Vanilla CSS, Glassmorphism, Multi-Theme Engine |
 | **Fonts** | Bebas Neue (Display) & DM Sans (Body) |
 
 ## 🚀 Getting Started
@@ -31,8 +29,9 @@ GymTracker AI is a premium, full-stack fitness tracking application designed for
 ### Prerequisites
 
 - Node.js (v18+)
-- Supabase Account
-- Google AI (Gemini) API Key
+- Supabase Account (with Google/GitHub OAuth enabled for Social Login)
+- Groq API Key (Primary AI)
+- Google AI (Gemini) API Key (Backup AI)
 
 ### Installation
 
@@ -52,6 +51,7 @@ GymTracker AI is a premium, full-stack fitness tracking application designed for
    PORT=5000
    SUPABASE_URL=your_supabase_url
    SUPABASE_ANON_KEY=your_supabase_anon_key
+   GROQ_API_KEY=your_groq_api_key
    GEMINI_API_KEY=your_gemini_api_key
    ```
 
@@ -72,45 +72,25 @@ GymTracker AI is a premium, full-stack fitness tracking application designed for
 - **Start Backend**: `cd backend && npm run dev`
 - **Start Frontend**: `cd frontend && npm run dev`
 
-## 📁 Project Structure
-
-```text
-gymtracker/
-├── backend/
-│   ├── api/               # Vercel Serverless Entry
-│   ├── server.js          # Express Logic
-│   └── vercel.json        # Vercel Configuration
-├── frontend/
-│   ├── src/
-│   │   ├── components/    # Reusable UI Components
-│   │   ├── context/       # Auth & Global State
-│   │   ├── pages/         # View Components
-│   │   ├── utils/         # API Clients & Helpers
-│   │   └── index.css      # Core Design System
-│   └── public/
-└── README.md
-```
-
 ## 🔌 API Endpoints
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `GET` | `/api/dashboard` | Aggregated data for overview |
-| `GET` | `/api/weight` | Weight history logs |
-| `POST` | `/api/weight` | Log new weight/body fat |
-| `GET` | `/api/meals/today` | Today's meals & macro totals |
-| `POST` | `/api/meals` | Log a meal entry |
-| `GET` | `/api/workout-plan` | Weekly training program |
-| `POST` | `/api/workout-log` | Record a workout session |
-| `POST` | `/api/ai/coach` | Interact with the AI Coach |
+| `GET` | `/api/dashboard` | Aggregated Pro data including streaks and achievements |
+| `GET` | `/api/weight` | Weight history with trend analysis |
+| `GET` | `/api/meals` | Date-filtered meal history |
+| `POST` | `/api/meals` | Log meal with automatic macro rounding |
+| `GET` | `/api/water` | Daily hydration tracking |
+| `POST` | `/api/ai/coach` | Ultra-fast Groq-powered coaching session |
+| `GET` | `/api/prs` | Personal Records management |
 
 ## ☁️ Deployment
 
-The project is optimized for deployment on **Vercel**.
+The project is optimized for **Vercel**.
 
-1. **Backend**: Deploy the `backend/` folder as a separate project.
+1. **Backend**: Deploy the `backend/` folder. Ensure all environment variables (Groq/Supabase) are set in the Vercel dashboard.
 2. **Frontend**: Deploy the `frontend/` folder.
-3. **Configuration**: Set the `VITE_API_URL` environment variable in the frontend deployment to point to your live backend URL.
+3. **Environment**: Update `VITE_API_URL` to point to your live backend.
 
 ## 🤝 Contributing
 
@@ -118,4 +98,4 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## 📄 License
 
-MIT License - feel free to use this project for your own training!
+MIT License - **Build your legacy.**

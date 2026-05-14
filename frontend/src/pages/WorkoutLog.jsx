@@ -10,6 +10,7 @@ export default function WorkoutLog() {
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({ date: new Date().toISOString().split('T')[0], exercise: '', sets: '3', reps: '10', weight: '' });
   const [submitting, setSubmitting] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const { showToast, ToastComponent } = useToast();
 
   const today = new Date().toISOString().split('T')[0];
@@ -38,12 +39,47 @@ export default function WorkoutLog() {
     if (!form.exercise) return showToast('Please enter an exercise', 'error');
     setSubmitting(true);
     try {
-      await workoutLogAPI.log({ ...form, sets: parseInt(form.sets), reps: parseInt(form.reps), weight: parseFloat(form.weight) || 0 });
-      showToast('Exercise logged!');
+      const payload = { ...form, sets: parseInt(form.sets), reps: parseInt(form.reps), weight: parseFloat(form.weight) || 0 };
+      if (editingId) {
+        await workoutLogAPI.update(editingId, payload);
+        showToast('Log updated!');
+        setEditingId(null);
+      } else {
+        await workoutLogAPI.log(payload);
+        showToast('Exercise logged!');
+      }
       setForm(f => ({ ...f, exercise: '', sets: '3', reps: '10', weight: '' }));
       fetchData();
-    } catch (err) { showToast(err || 'Failed to log exercise', 'error'); }
+    } catch (err) { showToast(err || 'Failed to save exercise', 'error'); }
     finally { setSubmitting(false); }
+  };
+
+  const handleEdit = (log) => {
+    setEditingId(log.id);
+    setForm({
+      date: log.date,
+      exercise: log.exercise,
+      sets: String(log.sets),
+      reps: String(log.reps),
+      weight: String(log.weight)
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Delete this log?')) return;
+    try {
+      await workoutLogAPI.delete(id);
+      showToast('Log deleted');
+      fetchData();
+    } catch (err) {
+      showToast(err || 'Failed to delete', 'error');
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setForm({ date: new Date().toISOString().split('T')[0], exercise: '', sets: '3', reps: '10', weight: '' });
   };
 
   const todayLogs = logs.filter(l => l.date === today);
@@ -118,7 +154,14 @@ export default function WorkoutLog() {
 
         {/* Log form */}
         <div className="card">
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: '18px', letterSpacing: '0.06em', marginBottom: '20px' }}>LOG SET</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: '18px', letterSpacing: '0.06em' }}>
+              {editingId ? 'EDIT SET' : 'LOG SET'}
+            </div>
+            {editingId && (
+              <button onClick={cancelEdit} className="btn btn-ghost" style={{ padding: '5px 10px', fontSize: '11px' }}>CANCEL</button>
+            )}
+          </div>
           <form onSubmit={handleSubmit}>
             <div style={{ marginBottom: '14px' }}>
               <label className="input-label">Date</label>
@@ -143,9 +186,33 @@ export default function WorkoutLog() {
               </div>
             </div>
             <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={submitting}>
-              {submitting ? 'Saving...' : '+ LOG EXERCISE'}
+              {submitting ? 'Saving...' : editingId ? 'UPDATE LOG' : '+ LOG EXERCISE'}
             </button>
           </form>
+
+          {/* Utilities Row */}
+          <div className="grid-2" style={{ marginTop: '24px', gap: '16px' }}>
+            <div style={{ padding: '16px', background: 'var(--bg-elevated)', borderRadius: '12px', border: '1px solid var(--border)' }}>
+              <div style={{ fontSize: '10px', fontWeight: '700', letterSpacing: '0.1em', marginBottom: '10px', color: 'var(--text-muted)' }}>1RM CALCULATOR</div>
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                <input type="number" placeholder="Wt" className="input" style={{ height: '32px', fontSize: '12px' }} id="orm-w" />
+                <input type="number" placeholder="Rps" className="input" style={{ height: '32px', fontSize: '12px' }} id="orm-r" />
+              </div>
+              <button onClick={() => {
+                const w = parseFloat(document.getElementById('orm-w').value);
+                const r = parseInt(document.getElementById('orm-r').value);
+                if (w && r) {
+                  const orm = Math.round(w * (1 + r/30));
+                  showToast(`Estimated 1RM: ${orm}kg`);
+                }
+              }} className="btn btn-ghost" style={{ width: '100%', fontSize: '10px', height: '28px' }}>CALCULATE</button>
+            </div>
+
+            <div style={{ padding: '16px', background: 'var(--bg-elevated)', borderRadius: '12px', border: '1px solid var(--border)' }}>
+              <div style={{ fontSize: '10px', fontWeight: '700', letterSpacing: '0.1em', marginBottom: '10px', color: 'var(--text-muted)' }}>REST TIMER</div>
+              <RestTimer />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -169,7 +236,15 @@ export default function WorkoutLog() {
                       <tbody>
                         {dayLogs.map(log => (
                           <tr key={log.id}>
-                            <td style={{ color: 'var(--text-primary)', fontWeight: '500' }}>{log.exercise}</td>
+                            <td style={{ color: 'var(--text-primary)', fontWeight: '500' }}>
+                              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                <div style={{ display: 'flex', gap: '2px' }}>
+                                  <button onClick={() => handleEdit(log)} className="btn btn-ghost" style={{ padding: '2px 6px', fontSize: '9px', opacity: 0.8 }}>Edit</button>
+                                  <button onClick={() => handleDelete(log.id)} className="btn btn-ghost" style={{ padding: '2px 6px', fontSize: '9px', opacity: 0.8, color: 'var(--red)' }}>Del</button>
+                                </div>
+                                {log.exercise}
+                              </div>
+                            </td>
                             <td style={{ fontFamily: 'var(--font-mono)' }}>{log.sets}</td>
                             <td style={{ fontFamily: 'var(--font-mono)' }}>{log.reps}</td>
                             <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent)' }}>{log.weight}kg</td>
@@ -190,3 +265,34 @@ export default function WorkoutLog() {
     </div>
   );
 }
+
+function RestTimer() {
+  const [seconds, setSeconds] = useState(60);
+  const [isActive, setIsActive] = useState(false);
+
+  useEffect(() => {
+    let interval = null;
+    if (isActive && seconds > 0) {
+      interval = setInterval(() => setSeconds(s => s - 1), 1000);
+    } else if (seconds === 0) {
+      setIsActive(false);
+      clearInterval(interval);
+    }
+    return () => clearInterval(interval);
+  }, [isActive, seconds]);
+
+  return (
+    <div style={{ textAlign: 'center' }}>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: '20px', color: seconds < 10 ? 'var(--red)' : 'var(--accent)', marginBottom: '8px' }}>
+        0:{seconds.toString().padStart(2, '0')}
+      </div>
+      <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
+        <button onClick={() => setIsActive(!isActive)} className="btn btn-ghost" style={{ padding: '2px 8px', fontSize: '10px' }}>
+          {isActive ? 'PAUSE' : 'START'}
+        </button>
+        <button onClick={() => { setIsActive(false); setSeconds(60); }} className="btn btn-ghost" style={{ padding: '2px 8px', fontSize: '10px' }}>RESET</button>
+      </div>
+    </div>
+  );
+}
+

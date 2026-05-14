@@ -4,6 +4,7 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const { createClient } = require('@supabase/supabase-js');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const Groq = require('groq-sdk');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -19,8 +20,9 @@ const geminiKey = process.env.GEMINI_API_KEY;
 if (!geminiKey) {
   console.warn('⚠️ WARNING: GEMINI_API_KEY is not set in environment variables.');
 }
-const genAI = new GoogleGenerativeAI(geminiKey || 'dummy_key');
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || 'dummy_key');
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
 
 // Middleware
 app.use(cors());
@@ -63,7 +65,7 @@ app.post('/api/weight', async (req, res) => {
 
   const { data, error } = await getAuthenticatedSupabase(req)
     .from('weight_logs')
-    .insert([{ user_id, date, weight: +weight, body_fat: body_fat ? +body_fat : null }])
+    .insert([{ user_id, date, weight: Math.round(+weight * 10) / 10, body_fat: body_fat ? Math.round(+body_fat * 10) / 10 : null }])
     .select();
 
   if (error) return res.status(500).json({ error: error.message });
@@ -110,6 +112,33 @@ app.get('/api/weight/stats', async (req, res) => {
   });
 });
 
+app.put('/api/weight/:id', async (req, res) => {
+  const { date, weight, body_fat } = req.body;
+  const user_id = getUserId(req);
+
+  const { data, error } = await getAuthenticatedSupabase(req)
+    .from('weight_logs')
+    .update({ date, weight: +weight, body_fat: body_fat ? +body_fat : null })
+    .eq('id', req.params.id)
+    .eq('user_id', user_id)
+    .select();
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ success: true, data: data[0] });
+});
+
+app.delete('/api/weight/:id', async (req, res) => {
+  const user_id = getUserId(req);
+  const { error } = await getAuthenticatedSupabase(req)
+    .from('weight_logs')
+    .delete()
+    .eq('id', req.params.id)
+    .eq('user_id', user_id);
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ success: true, message: 'Deleted' });
+});
+
 // ============ MEALS ============
 app.post('/api/meals', async (req, res) => {
   const { date, meal_type, food_name, calories = 0, protein = 0, carbs = 0, fat = 0 } = req.body;
@@ -121,7 +150,7 @@ app.post('/api/meals', async (req, res) => {
     .from('meals')
     .insert([{ 
       user_id, date, meal_type, food_name, 
-      calories: +calories, protein: +protein, carbs: +carbs, fat: +fat 
+      calories: Math.round(+calories), protein: Math.round(+protein), carbs: Math.round(+carbs), fat: Math.round(+fat) 
     }])
     .select();
 
@@ -171,6 +200,36 @@ app.get('/api/meals/today', async (req, res) => {
   res.json({ success: true, data: { meals, totals } });
 });
 
+app.put('/api/meals/:id', async (req, res) => {
+  const { date, meal_type, food_name, calories, protein, carbs, fat } = req.body;
+  const user_id = getUserId(req);
+
+  const { data, error } = await getAuthenticatedSupabase(req)
+    .from('meals')
+    .update({ 
+      date, meal_type, food_name, 
+      calories: Math.round(+calories), protein: Math.round(+protein), carbs: Math.round(+carbs), fat: Math.round(+fat) 
+    })
+    .eq('id', req.params.id)
+    .eq('user_id', user_id)
+    .select();
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ success: true, data: data[0] });
+});
+
+app.delete('/api/meals/:id', async (req, res) => {
+  const user_id = getUserId(req);
+  const { error } = await getAuthenticatedSupabase(req)
+    .from('meals')
+    .delete()
+    .eq('id', req.params.id)
+    .eq('user_id', user_id);
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ success: true, message: 'Deleted' });
+});
+
 // ============ WORKOUT PLANS ============
 app.post('/api/workout-plan', async (req, res) => {
   const { day_of_week, exercise, sets = 3, reps = 10 } = req.body;
@@ -180,7 +239,7 @@ app.post('/api/workout-plan', async (req, res) => {
 
   const { data, error } = await getAuthenticatedSupabase(req)
     .from('workout_plans')
-    .insert([{ user_id, day_of_week, exercise, sets: +sets, reps: +reps }])
+    .insert([{ user_id, day_of_week, exercise, sets: Math.round(+sets), reps: Math.round(+reps) }])
     .select();
 
   if (error) return res.status(500).json({ error: error.message });
@@ -204,11 +263,28 @@ app.get('/api/workout-plan', async (req, res) => {
   res.json({ success: true, data });
 });
 
+app.put('/api/workout-plan/:id', async (req, res) => {
+  const { day_of_week, exercise, sets, reps } = req.body;
+  const user_id = getUserId(req);
+
+  const { data, error } = await getAuthenticatedSupabase(req)
+    .from('workout_plans')
+    .update({ day_of_week, exercise, sets: Math.round(+sets), reps: Math.round(+reps) })
+    .eq('id', req.params.id)
+    .eq('user_id', user_id)
+    .select();
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ success: true, data: data[0] });
+});
+
 app.delete('/api/workout-plan/:id', async (req, res) => {
+  const user_id = getUserId(req);
   const { error } = await getAuthenticatedSupabase(req)
     .from('workout_plans')
     .delete()
-    .eq('id', req.params.id);
+    .eq('id', req.params.id)
+    .eq('user_id', user_id);
 
   if (error) return res.status(500).json({ error: error.message });
   res.json({ success: true, message: 'Deleted' });
@@ -225,7 +301,7 @@ app.post('/api/workout-log', async (req, res) => {
     .from('workout_logs')
     .insert([{ 
       user_id, date, exercise, 
-      sets: +sets, reps: +reps, weight: +weight, 
+      sets: Math.round(+sets), reps: Math.round(+reps), weight: Math.round(+weight * 10) / 10, 
       completed: !!completed 
     }])
     .select();
@@ -252,6 +328,85 @@ app.get('/api/workout-log', async (req, res) => {
 
   if (error) return res.status(500).json({ error: error.message });
   res.json({ success: true, data });
+});
+
+app.put('/api/workout-log/:id', async (req, res) => {
+  const { date, exercise, sets, reps, weight, completed } = req.body;
+  const user_id = getUserId(req);
+
+  const { data, error } = await getAuthenticatedSupabase(req)
+    .from('workout_logs')
+    .update({ 
+      date, exercise, 
+      sets: Math.round(+sets), reps: Math.round(+reps), weight: Math.round(+weight * 10) / 10, 
+      completed: !!completed 
+    })
+    .eq('id', req.params.id)
+    .eq('user_id', user_id)
+    .select();
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ success: true, data: data[0] });
+});
+
+app.delete('/api/workout-log/:id', async (req, res) => {
+  const user_id = getUserId(req);
+  const { error } = await getAuthenticatedSupabase(req)
+    .from('workout_logs')
+    .delete()
+    .eq('id', req.params.id)
+    .eq('user_id', user_id);
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ success: true, message: 'Deleted' });
+});
+
+// ============ WATER LOGS ============
+app.post('/api/water', async (req, res) => {
+  const { date, amount_ml } = req.body;
+  const user_id = getUserId(req);
+
+  if (!date || !amount_ml) return res.status(400).json({ error: 'date and amount_ml required' });
+
+  const { data, error } = await getAuthenticatedSupabase(req)
+    .from('water_logs')
+    .insert([{ user_id, date, amount_ml: Math.round(+amount_ml) }])
+    .select();
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.status(201).json({ success: true, data: data[0] });
+});
+
+app.get('/api/water', async (req, res) => {
+  const user_id = getUserId(req);
+  const date = req.query.date;
+
+  let query = getAuthenticatedSupabase(req)
+    .from('water_logs')
+    .select('amount_ml')
+    .eq('user_id', user_id);
+
+  if (date) query = query.eq('date', date);
+
+  const { data, error } = await query;
+  if (error) return res.status(500).json({ error: error.message });
+  const total = (data || []).reduce((s, w) => s + w.amount_ml, 0);
+  res.json({ success: true, total });
+});
+
+app.get('/api/water/today', async (req, res) => {
+  const user_id = getUserId(req);
+  const t = new Date().toISOString().split('T')[0];
+
+  const { data, error } = await getAuthenticatedSupabase(req)
+    .from('water_logs')
+    .select('amount_ml')
+    .eq('user_id', user_id)
+    .eq('date', t);
+
+  if (error) return res.status(500).json({ error: error.message });
+  const total = (data || []).reduce((s, w) => s + w.amount_ml, 0);
+  res.json({ success: true, total });
 });
 
 app.get('/api/workout-log/stats', async (req, res) => {
@@ -291,17 +446,26 @@ app.get('/api/dashboard', async (req, res) => {
 
   // Fetch multiple data points in parallel
   const authSupabase = getAuthenticatedSupabase(req);
-  const [weightRes, mealsRes, workoutsRes, allMealsRes] = await Promise.all([
+  const results = await Promise.allSettled([
     authSupabase.from('weight_logs').select('date, weight').eq('user_id', user_id).order('date', { ascending: false }).limit(30),
-    authSupabase.from('meals').select('calories').eq('user_id', user_id).eq('date', t),
+    authSupabase.from('meals').select('*').eq('user_id', user_id).eq('date', t),
     authSupabase.from('workout_logs').select('date, exercise, completed').eq('user_id', user_id).gte('date', since7),
-    authSupabase.from('meals').select('date, calories').eq('user_id', user_id).order('date', { ascending: false }).limit(200)
+    authSupabase.from('meals').select('date, calories').eq('user_id', user_id).order('date', { ascending: false }).limit(200),
+    authSupabase.from('water_logs').select('amount_ml').eq('user_id', user_id).eq('date', t)
   ]);
+
+  const [weightRes, mealsRes, workoutsRes, allMealsRes, waterRes] = results.map(r => r.status === 'fulfilled' ? r.value : { data: [] });
 
   const weightLogs = weightRes.data || [];
   const weightHistory = [...weightLogs].reverse();
-  const caloriesToday = (mealsRes.data || []).reduce((s, m) => s + m.calories, 0);
+  const mealData = mealsRes.data || [];
+  const caloriesToday = mealData.reduce((s, m) => s + m.calories, 0);
+  const proteinToday = mealData.reduce((s, m) => s + (m.protein || 0), 0);
+  const carbsToday = mealData.reduce((s, m) => s + (m.carbs || 0), 0);
+  const fatToday = mealData.reduce((s, m) => s + (m.fat || 0), 0);
   
+  const waterToday = (waterRes.data || []).reduce((s, w) => s + w.amount_ml, 0);
+
   const weekWorkouts = new Set((workoutsRes.data || []).filter(w => w.completed).map(w => w.date)).size;
   const todayWorkoutCount = new Set((workoutsRes.data || []).filter(w => w.date === t && w.completed).map(w => w.exercise)).size;
 
@@ -314,17 +478,72 @@ app.get('/api/dashboard', async (req, res) => {
     .slice(-14)
     .map(([date, total_calories]) => ({ date, total_calories }));
 
+  // Calculate Streak
+  const { data: streakLogs } = await authSupabase.from('workout_logs').select('date').eq('user_id', user_id).eq('completed', true).order('date', { ascending: false });
+  const uniqueDates = [...new Set((streakLogs || []).map(l => l.date))];
+  let streak = 0;
+  if (uniqueDates.length > 0) {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const yesterdayStr = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    
+    if (uniqueDates[0] === todayStr || uniqueDates[0] === yesterdayStr) {
+      streak = 1;
+      for (let i = 0; i < uniqueDates.length - 1; i++) {
+        const d1 = new Date(uniqueDates[i]);
+        const d2 = new Date(uniqueDates[i+1]);
+        const diff = (d1 - d2) / (1000 * 60 * 60 * 24);
+        if (Math.round(diff) === 1) streak++;
+        else break;
+      }
+    }
+  }
+
   res.json({ 
     success: true, 
     data: { 
       latestWeight: weightLogs[0] || null, 
       weightHistory, 
       caloriesToday, 
+      proteinToday,
+      carbsToday,
+      fatToday,
+      waterToday,
       todayWorkoutCount, 
       weekWorkouts, 
-      calHistory 
+      calHistory,
+      streak,
+      mealsToday: mealData
     } 
   });
+});
+
+// ============ PERSONAL RECORDS ============
+app.get('/api/prs', async (req, res) => {
+  const user_id = getUserId(req);
+  const { data, error } = await getAuthenticatedSupabase(req)
+    .from('personal_records')
+    .select('*')
+    .eq('user_id', user_id)
+    .order('weight', { ascending: false });
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ success: true, data });
+});
+
+app.post('/api/prs', async (req, res) => {
+  const { exercise, weight, date } = req.body;
+  const user_id = getUserId(req);
+
+  if (!exercise || !weight) return res.status(400).json({ error: 'exercise and weight required' });
+
+  // Update if exists or insert
+  const { data, error } = await getAuthenticatedSupabase(req)
+    .from('personal_records')
+    .upsert({ user_id, exercise, weight: +weight, date }, { onConflict: 'user_id,exercise' })
+    .select();
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.status(201).json({ success: true, data: data[0] });
 });
 
 // ============ AI COACH (Gemini) ============
@@ -332,8 +551,8 @@ app.post('/api/ai/coach', async (req, res) => {
   const user_id = getUserId(req);
   const { message, context } = req.body;
 
-  if (!process.env.GEMINI_API_KEY) {
-    return res.status(500).json({ error: 'Gemini API key not configured' });
+  if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === 'dummy_key') {
+    return res.status(500).json({ error: 'Gemini API key not configured. Please add GEMINI_API_KEY to your .env file.' });
   }
 
   try {
@@ -346,35 +565,69 @@ app.post('/api/ai/coach', async (req, res) => {
       userStats = { weights, meals };
     }
 
-    const prompt = `You are a professional fitness and nutrition coach.
+    const systemPrompt = `You are a professional fitness and nutrition coach. 
+    You have access to the user's recent weight logs, meals, and workout stats.
     Context: ${JSON.stringify(userStats)}
-    User Question: "${message}"
     
-    Instruction: Answer the user's question directly and concisely using the provided context if relevant. 
-    Do not include a full status snapshot, summary, or general advice unless specifically asked. 
-    Focus only on what the user is asking right now.
-    Format your response in concise markdown.`;
+    Instruction: Answer the user's question directly and concisely. 
+    Use the provided context to give personalized advice.
+    Format your response in clean markdown.`;
 
-    // Try gemini-1.5-flash first, fallback to gemini-pro if needed
-    let responseText;
-    try {
-      const result = await model.generateContent(prompt);
-      responseText = result.response.text();
-    } catch (modelErr) {
-      if (modelErr.message.includes('404') || modelErr.message.includes('not found')) {
-        console.log('Gemini 1.5 Flash not found, falling back to gemini-pro...');
-        const fallbackModel = genAI.getGenerativeModel({ model: "gemini-pro" });
-        const result = await fallbackModel.generateContent(prompt);
-        responseText = result.response.text();
-      } else {
-        throw modelErr;
+    const generationConfig = {
+      temperature: 0.7,
+      topK: 40,
+      topP: 0.95,
+      maxOutputTokens: 1024,
+    };
+
+    // Use Groq as primary if available
+    if (process.env.GROQ_API_KEY) {
+      try {
+        const completion = await groq.chat.completions.create({
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: message }
+          ],
+          model: "llama-3.3-70b-versatile",
+          temperature: 0.7,
+          max_tokens: 1024,
+        });
+
+        const advice = completion.choices[0]?.message?.content;
+        if (advice) {
+          return res.json({ success: true, provider: 'groq', advice });
+        }
+      } catch (groqErr) {
+        console.error('Groq Error:', groqErr.message);
+        // Fall through to Gemini if Groq fails
       }
     }
 
-    res.json({ success: true, advice: responseText });
+    // Fallback to Gemini
+    const modelsToTry = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro"];
+    let responseText = null;
+    let lastError = null;
+
+    for (const modelName of modelsToTry) {
+      try {
+        const currentModel = genAI.getGenerativeModel({ model: modelName });
+        const result = await currentModel.generateContent([systemPrompt, message]);
+        responseText = result.response.text();
+        if (responseText) break;
+      } catch (err) {
+        lastError = err;
+        console.error(`Error with Gemini ${modelName}:`, err.message);
+      }
+    }
+
+    if (!responseText) {
+      throw new Error(lastError?.message || 'AI Service unavailable');
+    }
+
+    res.json({ success: true, provider: 'gemini', advice: responseText });
   } catch (err) {
-    console.error('Gemini Error:', err);
-    res.status(500).json({ error: err.message || err.toString() || 'AI Coaching failed' });
+    console.error('AI Route Error:', err);
+    res.status(500).json({ error: err.message || 'AI Coaching failed' });
   }
 });
 

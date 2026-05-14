@@ -11,6 +11,8 @@ import Profile from './pages/Profile';
 import Login from './pages/Login';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
+import HealthCalculators from './pages/HealthCalculators';
+
 const PAGES = {
   dashboard: Dashboard,
   weight: WeightTracker,
@@ -19,6 +21,7 @@ const PAGES = {
   'workout-log': WorkoutLog,
   progress: Progress,
   'ai-coach': AICoach,
+  calculators: HealthCalculators,
   profile: Profile,
 };
 
@@ -35,6 +38,12 @@ function AppContent() {
     setPageKey(k => k + 1);
     setSidebarOpen(false);
   }
+
+  // Theme persistence
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('gym-theme') || 'stone';
+    document.body.className = `theme-${savedTheme}`;
+  }, []);
 
   // Close sidebar on ESC
   useEffect(() => {
@@ -73,7 +82,7 @@ function AppContent() {
 
       <main className="main-content">
         <div key={pageKey} className="page-enter">
-          <PageComponent />
+          <PageComponent onNavigate={navigate} />
         </div>
       </main>
     </div>

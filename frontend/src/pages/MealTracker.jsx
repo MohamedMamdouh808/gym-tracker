@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Doughnut } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
-import { mealsAPI } from '../utils/api';
+import { mealsAPI, waterAPI } from '../utils/api';
 import { useToast } from '../hooks/useToast';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
@@ -21,19 +21,64 @@ const COMMON_FOODS = [
 
 export default function MealTracker() {
   const [meals, setMeals] = useState([]);
+  const [recentMeals, setRecentMeals] = useState([]);
   const [totals, setTotals] = useState({ calories: 0, protein: 0, carbs: 0, fat: 0 });
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({ date: new Date().toISOString().split('T')[0], meal_type: 'Breakfast', food_name: '', calories: '', protein: '', carbs: '', fat: '' });
   const [submitting, setSubmitting] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [waterToday, setWaterToday] = useState(0);
+  const [viewDate, setViewDate] = useState(new Date().toISOString().split('T')[0]);
   const { showToast, ToastComponent } = useToast();
 
-  const fetchMeals = async () => {
+  const fetchMeals = async (date = viewDate) => {
+    setLoading(true);
     try {
-      const res = await mealsAPI.today();
-      setMeals(res.data.meals);
-      setTotals(res.data.totals);
-    } catch { setMeals([]); }
-    finally { setLoading(false); }
+      const res = await mealsAPI.get({ date });
+      if (res.success) {
+        setMeals(res.data || []);
+        
+        const dayTotals = (res.data || []).reduce((acc, m) => ({
+          calories: acc.calories + (m.calories || 0),
+          protein: acc.protein + (m.protein || 0),
+          carbs: acc.carbs + (m.carbs || 0),
+          fat: acc.fat + (m.fat || 0)
+        }), { calories: 0, protein: 0, carbs: 0, fat: 0 });
+        
+        setTotals(dayTotals);
+      }
+      
+      const recentRes = await mealsAPI.get({ limit: 10 });
+      if (recentRes.success) {
+        setRecentMeals(recentRes.data || []);
+      }
+      
+      try {
+        const waterRes = await waterAPI.get({ date }); 
+        if (waterRes.success) {
+          setWaterToday(waterRes.total || 0);
+        }
+      } catch (e) {
+        console.error("Water fetch failed", e);
+      }
+    } catch (err) { 
+      console.error("Meals fetch failed", err);
+      setMeals([]); 
+    } finally { 
+      setLoading(false); 
+    }
+  };
+
+  useEffect(() => { fetchMeals(viewDate); }, [viewDate]);
+
+  const logWater = async (amount) => {
+    try {
+      await waterAPI.log({ date: viewDate, amount_ml: amount });
+      setWaterToday(prev => prev + amount);
+      showToast(`Added ${amount}ml water for ${viewDate}!`);
+    } catch (err) {
+      showToast('Failed to log water', 'error');
+    }
   };
 
   useEffect(() => { fetchMeals(); }, []);
@@ -47,12 +92,49 @@ export default function MealTracker() {
     if (!form.food_name) return showToast('Please enter a food name', 'error');
     setSubmitting(true);
     try {
-      await mealsAPI.log({ ...form, calories: parseFloat(form.calories) || 0, protein: parseFloat(form.protein) || 0, carbs: parseFloat(form.carbs) || 0, fat: parseFloat(form.fat) || 0 });
-      showToast('Meal logged!');
-      setForm({ date: new Date().toISOString().split('T')[0], meal_type: 'Breakfast', food_name: '', calories: '', protein: '', carbs: '', fat: '' });
-      fetchMeals();
-    } catch (err) { showToast(err || 'Failed to log meal', 'error'); }
+      const payload = { ...form, calories: parseFloat(form.calories) || 0, protein: parseFloat(form.protein) || 0, carbs: parseFloat(form.carbs) || 0, fat: parseFloat(form.fat) || 0 };
+      if (editingId) {
+        await mealsAPI.update(editingId, payload);
+        showToast('Meal updated!');
+        setEditingId(null);
+      } else {
+        await mealsAPI.log(payload);
+        showToast('Meal logged!');
+      }
+      setForm({ date: viewDate, meal_type: 'Breakfast', food_name: '', calories: '', protein: '', carbs: '', fat: '' });
+      fetchMeals(viewDate);
+    } catch (err) { showToast(err || 'Failed to save meal', 'error'); }
     finally { setSubmitting(false); }
+  };
+
+  const handleEdit = (meal) => {
+    setEditingId(meal.id);
+    setForm({
+      date: meal.date,
+      meal_type: meal.meal_type,
+      food_name: meal.food_name,
+      calories: meal.calories,
+      protein: meal.protein,
+      carbs: meal.carbs,
+      fat: meal.fat
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Delete this meal?')) return;
+    try {
+      await mealsAPI.delete(id);
+      showToast('Meal deleted');
+      fetchMeals();
+    } catch (err) {
+      showToast(err || 'Failed to delete', 'error');
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setForm({ date: new Date().toISOString().split('T')[0], meal_type: 'Breakfast', food_name: '', calories: '', protein: '', carbs: '', fat: '' });
   };
 
   const macroChart = {
@@ -81,7 +163,14 @@ export default function MealTracker() {
       <div className="grid-2" style={{ marginBottom: '24px', alignItems: 'start' }}>
         {/* Form */}
         <div className="card">
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: '18px', letterSpacing: '0.06em', marginBottom: '16px' }}>LOG MEAL</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: '18px', letterSpacing: '0.06em' }}>
+              {editingId ? 'EDIT MEAL' : 'LOG MEAL'}
+            </div>
+            {editingId && (
+              <button onClick={cancelEdit} className="btn btn-ghost" style={{ padding: '5px 10px', fontSize: '11px' }}>CANCEL</button>
+            )}
+          </div>
           
           {/* Quick fill */}
           <div style={{ marginBottom: '16px' }}>
@@ -99,7 +188,11 @@ export default function MealTracker() {
             <div className="grid-2" style={{ marginBottom: '14px' }}>
               <div>
                 <label className="input-label">Date</label>
-                <input type="date" className="input" value={form.date} onChange={e => setForm({...form, date: e.target.value})} />
+                <input type="date" className="input" value={form.date} onChange={e => {
+                  const d = e.target.value;
+                  setForm({...form, date: d});
+                  setViewDate(d);
+                }} />
               </div>
               <div>
                 <label className="input-label">Meal Type</label>
@@ -133,7 +226,7 @@ export default function MealTracker() {
               </div>
             </div>
             <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={submitting}>
-              {submitting ? 'Saving...' : '+ LOG MEAL'}
+              {submitting ? 'Saving...' : editingId ? 'UPDATE MEAL' : '+ LOG MEAL'}
             </button>
           </form>
         </div>
@@ -141,7 +234,7 @@ export default function MealTracker() {
         {/* Daily totals */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div className="card">
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: '16px', letterSpacing: '0.06em', marginBottom: '16px' }}>TODAY'S TOTALS</div>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: '16px', letterSpacing: '0.06em', marginBottom: '16px' }}>TOTALS: {viewDate === new Date().toISOString().split('T')[0] ? 'TODAY' : viewDate}</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '16px' }}>
               {[
                 { label: 'Calories', value: Math.round(totals.calories), unit: 'kcal', color: 'var(--accent)' },
@@ -173,21 +266,48 @@ export default function MealTracker() {
               <span>{Math.max(0, 2000 - totals.calories)} remaining</span>
             </div>
           </div>
+
+          {/* Water Log */}
+          <div className="card">
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: '14px', letterSpacing: '0.06em', marginBottom: '16px' }}>WATER LOG</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '32px', fontFamily: 'var(--font-display)', color: 'var(--blue)' }}>{waterToday} <span style={{ fontSize: '16px' }}>ml</span></div>
+                <div style={{ background: 'rgba(46,213,255,0.1)', height: '10px', borderRadius: '5px', marginTop: '8px' }}>
+                  <div style={{ background: 'var(--blue)', height: '100%', width: `${Math.min(waterToday / 3000 * 100, 100)}%`, borderRadius: '5px', transition: 'width 0.5s' }} />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', fontSize: '11px', color: 'var(--text-muted)' }}>
+                  <span>Goal: 3000ml</span>
+                  <span>{Math.max(0, 3000 - waterToday)}ml to go</span>
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '8px' }}>
+                <button onClick={() => logWater(250)} className="btn btn-ghost" style={{ padding: '8px 12px', fontSize: '11px' }}>+250ml</button>
+                <button onClick={() => logWater(500)} className="btn btn-ghost" style={{ padding: '8px 12px', fontSize: '11px' }}>+500ml</button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Meals list */}
       <div className="card">
-        <div style={{ fontFamily: 'var(--font-display)', fontSize: '16px', letterSpacing: '0.06em', marginBottom: '16px' }}>TODAY'S MEALS</div>
+        <div style={{ fontFamily: 'var(--font-display)', fontSize: '16px', letterSpacing: '0.06em', marginBottom: '16px' }}>MEALS: {viewDate === new Date().toISOString().split('T')[0] ? 'TODAY' : viewDate}</div>
         {loading ? <div className="skeleton" style={{ height: '200px' }} /> : mealsByType.length > 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', overflowX: 'auto' }}>
             {mealsByType.map(group => (
               <div key={group.type}>
                 <div style={{ fontSize: '11px', fontWeight: '700', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '8px', paddingBottom: '6px', borderBottom: '1px solid var(--border)' }}>{group.type}</div>
                 {group.meals.map(m => (
-                  <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0' }}>
-                    <div>
-                      <div style={{ fontWeight: '500', fontSize: '13px' }}>{m.food_name}</div>
+                  <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid var(--border-subtle)' }}>
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', gap: '4px' }}>
+                        <button onClick={() => handleEdit(m)} className="btn btn-ghost" style={{ padding: '4px 8px', fontSize: '10px' }}>EDIT</button>
+                        <button onClick={() => handleDelete(m.id)} className="btn btn-ghost" style={{ padding: '4px 8px', fontSize: '10px', color: 'var(--red)' }}>DEL</button>
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: '500', fontSize: '13px' }}>{m.food_name}</div>
+                      </div>
                     </div>
                     <div style={{ display: 'flex', gap: '16px', fontSize: '12px' }}>
                       <span style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>{m.calories} kcal</span>
@@ -201,7 +321,27 @@ export default function MealTracker() {
             ))}
           </div>
         ) : (
-          <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '40px', fontSize: '13px' }}>No meals logged today</div>
+          <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '40px', fontSize: '13px' }}>No meals logged for this date</div>
+        )}
+      </div>
+
+      {/* Recent History */}
+      <div className="card" style={{ marginTop: '24px' }}>
+        <div style={{ fontFamily: 'var(--font-display)', fontSize: '16px', letterSpacing: '0.06em', marginBottom: '16px' }}>RECENT LOGS (ALL TIME)</div>
+        {recentMeals.length > 0 ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {recentMeals.map(m => (
+              <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'var(--bg-elevated)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
+                <div>
+                  <div style={{ fontWeight: '600', fontSize: '12px' }}>{m.food_name}</div>
+                  <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{m.date} • {m.meal_type}</div>
+                </div>
+                <div style={{ fontSize: '11px', color: 'var(--accent)', fontWeight: '700' }}>{m.calories} kcal</div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '20px', fontSize: '12px' }}>No history yet</div>
         )}
       </div>
     </div>

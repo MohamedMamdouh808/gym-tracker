@@ -14,13 +14,21 @@ const EXERCISES = {
   Cardio: ['Running', 'Cycling', 'Jump Rope', 'HIIT', 'Swimming'],
 };
 
+const COMMUNITY_PLANS = [
+  { id: 'c1', name: 'PPL Hypertrophy', author: 'Coach Mike', exercises: 18, rating: 4.9, difficulty: 'Intermediate' },
+  { id: 'c2', name: '5x5 Strength', author: 'PowerLifter7', exercises: 12, rating: 4.8, difficulty: 'Beginner' },
+  { id: 'c3', name: 'Arnold Split', author: 'ClassicPhysique', exercises: 24, rating: 5.0, difficulty: 'Advanced' },
+];
+
 export default function WorkoutPlanner() {
+  const [activeTab, setActiveTab] = useState('my-plan');
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedDay, setSelectedDay] = useState('Monday');
   const [form, setForm] = useState({ day_of_week: 'Monday', exercise: '', sets: '3', reps: '10' });
   const [submitting, setSubmitting] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('Chest');
+  const [editingId, setEditingId] = useState(null);
   const { showToast, ToastComponent } = useToast();
 
   const fetchPlans = async () => {
@@ -38,12 +46,35 @@ export default function WorkoutPlanner() {
     if (!form.exercise) return showToast('Please enter an exercise name', 'error');
     setSubmitting(true);
     try {
-      await workoutPlanAPI.create({ ...form, sets: parseInt(form.sets), reps: parseInt(form.reps) });
-      showToast('Exercise added to plan!');
+      const payload = { ...form, sets: parseInt(form.sets), reps: parseInt(form.reps) };
+      if (editingId) {
+        await workoutPlanAPI.update(editingId, payload);
+        showToast('Plan updated!');
+        setEditingId(null);
+      } else {
+        await workoutPlanAPI.create(payload);
+        showToast('Exercise added to plan!');
+      }
       setForm(f => ({ ...f, exercise: '', sets: '3', reps: '10' }));
       fetchPlans();
-    } catch (err) { showToast(err || 'Failed to add exercise', 'error'); }
+    } catch (err) { showToast(err || 'Failed to save exercise', 'error'); }
     finally { setSubmitting(false); }
+  };
+
+  const handleEdit = (plan) => {
+    setEditingId(plan.id);
+    setForm({
+      day_of_week: plan.day_of_week,
+      exercise: plan.exercise,
+      sets: String(plan.sets),
+      reps: String(plan.reps)
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setForm({ day_of_week: selectedDay, exercise: '', sets: '3', reps: '10' });
   };
 
   const handleDelete = async (id) => {
@@ -54,152 +85,219 @@ export default function WorkoutPlanner() {
     } catch { showToast('Failed to delete', 'error'); }
   };
 
+  const adoptPlan = (plan) => {
+    showToast(`Adopting ${plan.name}... (Template applied)`);
+    // Logic to batch create exercises would go here
+  };
+
   const dayPlans = plans.filter(p => p.day_of_week === selectedDay);
 
   return (
-    <div>
+    <div className="page-enter">
       {ToastComponent}
       <div style={{ marginBottom: '28px' }}>
-        <h1 className="section-title">WORKOUT PLANNER</h1>
-        <p className="section-subtitle">Build your weekly training program</p>
+        <h1 className="section-title">TRAINING PROGRAM</h1>
+        <p className="section-subtitle">Architect your success one set at a time</p>
       </div>
 
-      <div className="grid-2" style={{ alignItems: 'start' }}>
-        {/* Day selector + plan view */}
-        <div>
-          {/* Day tabs */}
-          <div style={{ display: 'flex', gap: '6px', marginBottom: '16px', flexWrap: 'wrap' }}>
-            {DAYS.map(day => {
-              const count = plans.filter(p => p.day_of_week === day).length;
-              const isActive = selectedDay === day;
-              return (
-                <button key={day} onClick={() => setSelectedDay(day)} style={{
-                  padding: '8px 14px', borderRadius: 'var(--radius-sm)',
-                  background: isActive ? 'var(--accent-dim)' : 'var(--bg-elevated)',
-                  border: isActive ? '1px solid rgba(232,255,71,0.3)' : '1px solid var(--border)',
-                  color: isActive ? 'var(--accent)' : 'var(--text-secondary)',
-                  cursor: 'pointer', fontSize: '12px', fontWeight: '600',
-                  fontFamily: 'var(--font-body)', transition: 'all 0.15s',
-                  display: 'flex', alignItems: 'center', gap: '6px',
-                }}>
-                  {day.slice(0, 3).toUpperCase()}
-                  {count > 0 && (
-                    <span style={{ background: isActive ? 'var(--accent)' : 'var(--border-bright)', color: isActive ? '#080c10' : 'var(--text-muted)', borderRadius: '100px', padding: '1px 6px', fontSize: '10px' }}>{count}</span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '32px' }}>
+        <button 
+          onClick={() => setActiveTab('my-plan')}
+          className={`btn ${activeTab === 'my-plan' ? 'btn-primary' : 'btn-ghost'}`}
+          style={{ borderRadius: '100px', padding: '10px 24px' }}
+        >
+          MY PROGRAM
+        </button>
+        <button 
+          onClick={() => setActiveTab('community')}
+          className={`btn ${activeTab === 'community' ? 'btn-primary' : 'btn-ghost'}`}
+          style={{ borderRadius: '100px', padding: '10px 24px' }}
+        >
+          COMMUNITY DISCOVER
+        </button>
+      </div>
 
-          {/* Day's exercises */}
-          <div className="card">
-            <div className="flex items-center justify-between" style={{ marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: '20px', letterSpacing: '0.06em' }}>{selectedDay.toUpperCase()}</div>
-              <span className="badge badge-accent">{dayPlans.length} EXERCISES</span>
-            </div>
-            
-            {loading ? <div className="skeleton" style={{ height: '200px' }} /> : dayPlans.length > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', overflowX: 'auto' }}>
-                {dayPlans.map((plan, i) => (
-                  <div key={plan.id} style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '12px 14px', background: 'var(--bg-elevated)',
-                    borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)',
-                    minWidth: '280px'
+      {activeTab === 'my-plan' ? (
+        <div className="grid-2" style={{ alignItems: 'start' }}>
+          {/* Day selector + plan view */}
+          <div>
+            {/* Day tabs */}
+            <div style={{ display: 'flex', gap: '6px', marginBottom: '16px', flexWrap: 'wrap' }}>
+              {DAYS.map(day => {
+                const count = plans.filter(p => p.day_of_week === day).length;
+                const isActive = selectedDay === day;
+                return (
+                  <button key={day} onClick={() => setSelectedDay(day)} style={{
+                    padding: '8px 14px', borderRadius: 'var(--radius-sm)',
+                    background: isActive ? 'var(--accent-dim)' : 'var(--bg-elevated)',
+                    border: isActive ? '1px solid rgba(232,255,71,0.3)' : '1px solid var(--border)',
+                    color: isActive ? 'var(--accent)' : 'var(--text-secondary)',
+                    cursor: 'pointer', fontSize: '12px', fontWeight: '600',
+                    fontFamily: 'var(--font-body)', transition: 'all 0.15s',
+                    display: 'flex', alignItems: 'center', gap: '6px',
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'var(--accent-dim)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '700' }}>{i + 1}</div>
-                      <div>
-                        <div style={{ fontWeight: '600', fontSize: '13px' }}>{plan.exercise}</div>
-                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>{plan.sets} sets × {plan.reps} reps</div>
+                    {day.slice(0, 3).toUpperCase()}
+                    {count > 0 && (
+                      <span style={{ background: isActive ? 'var(--accent)' : 'var(--border-bright)', color: isActive ? '#080c10' : 'var(--text-muted)', borderRadius: '100px', padding: '1px 6px', fontSize: '10px' }}>{count}</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Day's exercises */}
+            <div className="card">
+              <div className="flex items-center justify-between" style={{ marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: '20px', letterSpacing: '0.06em' }}>{selectedDay.toUpperCase()}</div>
+                <span className="badge badge-accent">{dayPlans.length} EXERCISES</span>
+              </div>
+              
+              {loading ? <div className="skeleton" style={{ height: '200px' }} /> : dayPlans.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', overflowX: 'auto' }}>
+                  {dayPlans.map((plan, i) => (
+                    <div key={plan.id} style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '12px 14px', background: 'var(--bg-elevated)',
+                      borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)',
+                      minWidth: '280px'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'var(--accent-dim)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '700' }}>{i + 1}</div>
+                        <div>
+                          <div style={{ fontWeight: '600', fontSize: '13px' }}>{plan.exercise}</div>
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>{plan.sets} sets × {plan.reps} reps</div>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '4px' }}>
+                        <button onClick={() => handleEdit(plan)} className="btn btn-ghost" style={{ padding: '5px 10px', fontSize: '11px' }}>Edit</button>
+                        <button onClick={() => handleDelete(plan.id)} className="btn btn-danger" style={{ padding: '5px 10px', fontSize: '11px' }}>✕</button>
                       </div>
                     </div>
-                    <button onClick={() => handleDelete(plan.id)} className="btn btn-danger" style={{ padding: '5px 10px', fontSize: '11px' }}>✕</button>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '40px', fontSize: '13px', border: '1px dashed var(--border)', borderRadius: 'var(--radius-sm)' }}>
+                  Rest day or no exercises planned
+                </div>
+              )}
+            </div>
+
+            {/* Weekly overview */}
+            <div className="card" style={{ marginTop: '16px' }}>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: '16px', letterSpacing: '0.06em', marginBottom: '12px' }}>WEEKLY OVERVIEW</div>
+              {DAYS.map(day => {
+                const count = plans.filter(p => p.day_of_week === day).length;
+                return (
+                  <div key={day} style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+                    <div style={{ width: '60px', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase' }}>{day.slice(0,3)}</div>
+                    <div style={{ flex: 1, height: '6px', background: 'var(--bg-elevated)', borderRadius: '3px', overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${Math.min(count / 8 * 100, 100)}%`, background: count > 0 ? 'var(--accent)' : 'transparent', borderRadius: '3px' }} />
+                    </div>
+                    <div style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: count > 0 ? 'var(--accent)' : 'var(--text-muted)', width: '20px', textAlign: 'right' }}>{count}</div>
                   </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Add exercise form */}
+          <div className="card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: '18px', letterSpacing: '0.06em' }}>
+                {editingId ? 'EDIT EXERCISE' : 'ADD EXERCISE'}
+              </div>
+              {editingId && (
+                <button onClick={cancelEdit} className="btn btn-ghost" style={{ padding: '5px 10px', fontSize: '11px' }}>CANCEL</button>
+              )}
+            </div>
+            
+            {/* Exercise library */}
+            <div style={{ marginBottom: '16px' }}>
+              <label className="input-label">Exercise Library</label>
+              <div style={{ display: 'flex', gap: '6px', marginBottom: '8px', flexWrap: 'wrap' }}>
+                {Object.keys(EXERCISES).map(cat => (
+                  <button key={cat} type="button" onClick={() => setSelectedCategory(cat)} style={{
+                    padding: '4px 10px', borderRadius: '100px', fontSize: '11px', fontWeight: '600', cursor: 'pointer',
+                    background: selectedCategory === cat ? 'var(--accent)' : 'var(--bg-elevated)',
+                    color: selectedCategory === cat ? '#080c10' : 'var(--text-secondary)',
+                    border: '1px solid var(--border)', fontFamily: 'var(--font-body)',
+                  }}>{cat}</button>
                 ))}
               </div>
-            ) : (
-              <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '40px', fontSize: '13px', border: '1px dashed var(--border)', borderRadius: 'var(--radius-sm)' }}>
-                Rest day or no exercises planned
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                {EXERCISES[selectedCategory]?.map(ex => (
+                  <button key={ex} type="button" onClick={() => setForm(f => ({ ...f, exercise: ex }))} style={{
+                    padding: '5px 10px', borderRadius: 'var(--radius-sm)', fontSize: '12px', cursor: 'pointer',
+                    background: form.exercise === ex ? 'var(--accent-dim)' : 'var(--bg-elevated)',
+                    color: form.exercise === ex ? 'var(--accent)' : 'var(--text-secondary)',
+                    border: form.exercise === ex ? '1px solid rgba(232,255,71,0.3)' : '1px solid var(--border)',
+                    fontFamily: 'var(--font-body)', fontWeight: '500',
+                  }}>{ex}</button>
+                ))}
               </div>
-            )}
-          </div>
+            </div>
 
-          {/* Weekly overview */}
-          <div className="card" style={{ marginTop: '16px' }}>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: '16px', letterSpacing: '0.06em', marginBottom: '12px' }}>WEEKLY OVERVIEW</div>
-            {DAYS.map(day => {
-              const count = plans.filter(p => p.day_of_week === day).length;
-              return (
-                <div key={day} style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-                  <div style={{ width: '60px', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase' }}>{day.slice(0,3)}</div>
-                  <div style={{ flex: 1, height: '6px', background: 'var(--bg-elevated)', borderRadius: '3px', overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${Math.min(count / 8 * 100, 100)}%`, background: count > 0 ? 'var(--accent)' : 'transparent', borderRadius: '3px' }} />
-                  </div>
-                  <div style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: count > 0 ? 'var(--accent)' : 'var(--text-muted)', width: '20px', textAlign: 'right' }}>{count}</div>
+            <form onSubmit={handleSubmit}>
+              <div style={{ marginBottom: '14px' }}>
+                <label className="input-label">Day</label>
+                <select className="input" value={form.day_of_week} onChange={e => { setForm({...form, day_of_week: e.target.value}); setSelectedDay(e.target.value); }}>
+                  {DAYS.map(d => <option key={d}>{d}</option>)}
+                </select>
+              </div>
+              <div style={{ marginBottom: '14px' }}>
+                <label className="input-label">Exercise Name *</label>
+                <input type="text" className="input" placeholder="e.g. Bench Press" value={form.exercise} onChange={e => setForm({...form, exercise: e.target.value})} />
+              </div>
+              <div className="grid-2" style={{ marginBottom: '20px' }}>
+                <div>
+                  <label className="input-label">Sets</label>
+                  <input type="number" className="input" min="1" max="20" value={form.sets} onChange={e => setForm({...form, sets: e.target.value})} />
                 </div>
-              );
-            })}
+                <div>
+                  <label className="input-label">Reps</label>
+                  <input type="number" className="input" min="1" max="100" value={form.reps} onChange={e => setForm({...form, reps: e.target.value})} />
+                </div>
+              </div>
+              <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={submitting}>
+                {submitting ? 'Saving...' : editingId ? 'UPDATE PLAN' : '+ ADD TO PLAN'}
+              </button>
+            </form>
           </div>
         </div>
+      ) : (
+        <div className="grid-3">
+          {COMMUNITY_PLANS.map(plan => (
+            <div key={plan.id} className="card hover-lift">
+              <div className="flex justify-between items-start" style={{ marginBottom: '16px' }}>
+                <div>
+                  <div className="badge badge-accent" style={{ marginBottom: '8px' }}>{plan.difficulty.toUpperCase()}</div>
+                  <h3 style={{ margin: 0, fontSize: '18px', fontFamily: 'var(--font-display)' }}>{plan.name}</h3>
+                </div>
+                <div style={{ fontSize: '14px', color: 'var(--accent)', fontWeight: '700' }}>★ {plan.rating}</div>
+              </div>
+              
+              <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '20px' }}>
+                <div style={{ marginBottom: '4px' }}>Author: <span style={{ color: 'var(--text-primary)' }}>{plan.author}</span></div>
+                <div>Exercises: <span style={{ color: 'var(--text-primary)' }}>{plan.exercises}</span></div>
+              </div>
 
-        {/* Add exercise form */}
-        <div className="card">
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: '18px', letterSpacing: '0.06em', marginBottom: '20px' }}>ADD EXERCISE</div>
-          
-          {/* Exercise library */}
-          <div style={{ marginBottom: '16px' }}>
-            <label className="input-label">Exercise Library</label>
-            <div style={{ display: 'flex', gap: '6px', marginBottom: '8px', flexWrap: 'wrap' }}>
-              {Object.keys(EXERCISES).map(cat => (
-                <button key={cat} type="button" onClick={() => setSelectedCategory(cat)} style={{
-                  padding: '4px 10px', borderRadius: '100px', fontSize: '11px', fontWeight: '600', cursor: 'pointer',
-                  background: selectedCategory === cat ? 'var(--accent)' : 'var(--bg-elevated)',
-                  color: selectedCategory === cat ? '#080c10' : 'var(--text-secondary)',
-                  border: '1px solid var(--border)', fontFamily: 'var(--font-body)',
-                }}>{cat}</button>
-              ))}
+              <button 
+                onClick={() => adoptPlan(plan)}
+                className="btn btn-primary" 
+                style={{ width: '100%', borderRadius: '8px' }}
+              >
+                ADOPT PROGRAM
+              </button>
             </div>
-            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-              {EXERCISES[selectedCategory]?.map(ex => (
-                <button key={ex} type="button" onClick={() => setForm(f => ({ ...f, exercise: ex }))} style={{
-                  padding: '5px 10px', borderRadius: 'var(--radius-sm)', fontSize: '12px', cursor: 'pointer',
-                  background: form.exercise === ex ? 'var(--accent-dim)' : 'var(--bg-elevated)',
-                  color: form.exercise === ex ? 'var(--accent)' : 'var(--text-secondary)',
-                  border: form.exercise === ex ? '1px solid rgba(232,255,71,0.3)' : '1px solid var(--border)',
-                  fontFamily: 'var(--font-body)', fontWeight: '500',
-                }}>{ex}</button>
-              ))}
+          ))}
+          <div className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px dashed var(--border)', background: 'transparent' }}>
+            <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
+              <div style={{ fontSize: '24px', marginBottom: '8px' }}>+</div>
+              <div style={{ fontSize: '12px' }}>SHARE YOUR PLAN</div>
             </div>
           </div>
-
-          <form onSubmit={handleSubmit}>
-            <div style={{ marginBottom: '14px' }}>
-              <label className="input-label">Day</label>
-              <select className="input" value={form.day_of_week} onChange={e => { setForm({...form, day_of_week: e.target.value}); setSelectedDay(e.target.value); }}>
-                {DAYS.map(d => <option key={d}>{d}</option>)}
-              </select>
-            </div>
-            <div style={{ marginBottom: '14px' }}>
-              <label className="input-label">Exercise Name *</label>
-              <input type="text" className="input" placeholder="e.g. Bench Press" value={form.exercise} onChange={e => setForm({...form, exercise: e.target.value})} />
-            </div>
-            <div className="grid-2" style={{ marginBottom: '20px' }}>
-              <div>
-                <label className="input-label">Sets</label>
-                <input type="number" className="input" min="1" max="20" value={form.sets} onChange={e => setForm({...form, sets: e.target.value})} />
-              </div>
-              <div>
-                <label className="input-label">Reps</label>
-                <input type="number" className="input" min="1" max="100" value={form.reps} onChange={e => setForm({...form, reps: e.target.value})} />
-              </div>
-            </div>
-            <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={submitting}>
-              {submitting ? 'Adding...' : '+ ADD TO PLAN'}
-            </button>
-          </form>
         </div>
-      </div>
+      )}
     </div>
   );
 }

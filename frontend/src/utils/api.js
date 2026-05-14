@@ -3,7 +3,7 @@ import { supabase } from './supabaseClient';
 
 const API = axios.create({
   baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000',
-  timeout: 10000,
+  timeout: 30000,
 });
 
 API.interceptors.request.use(async (config) => {
@@ -25,17 +25,22 @@ export const weightAPI = {
   log: (data) => API.post('/api/weight', data),
   get: (params) => API.get('/api/weight', { params }),
   stats: (params) => API.get('/api/weight/stats', { params }),
+  update: (id, data) => API.put(`/api/weight/${id}`, data),
+  delete: (id) => API.delete(`/api/weight/${id}`),
 };
 
 export const mealsAPI = {
   log: (data) => API.post('/api/meals', data),
   get: (params) => API.get('/api/meals', { params }),
   today: (params) => API.get('/api/meals/today', { params }),
+  update: (id, data) => API.put(`/api/meals/${id}`, data),
+  delete: (id) => API.delete(`/api/meals/${id}`),
 };
 
 export const workoutPlanAPI = {
   create: (data) => API.post('/api/workout-plan', data),
   get: (params) => API.get('/api/workout-plan', { params }),
+  update: (id, data) => API.put(`/api/workout-plan/${id}`, data),
   delete: (id) => API.delete(`/api/workout-plan/${id}`),
 };
 
@@ -43,6 +48,8 @@ export const workoutLogAPI = {
   log: (data) => API.post('/api/workout-log', data),
   get: (params) => API.get('/api/workout-log', { params }),
   stats: (params) => API.get('/api/workout-log/stats', { params }),
+  update: (id, data) => API.put(`/api/workout-log/${id}`, data),
+  delete: (id) => API.delete(`/api/workout-log/${id}`),
 };
 
 export const dashboardAPI = {
@@ -51,6 +58,16 @@ export const dashboardAPI = {
 
 export const reportsAPI = {
   weekly: (params) => API.get('/api/reports/weekly', { params }),
+};
+
+export const waterAPI = {
+  log: (data) => API.post('/api/water', data),
+  today: () => API.get('/api/water/today'),
+};
+
+export const prAPI = {
+  get: () => API.get('/api/prs'),
+  update: (data) => API.post('/api/prs', data),
 };
 
 export const aiAPI = {

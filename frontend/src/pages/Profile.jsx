@@ -68,6 +68,36 @@ export default function Profile() {
           </div>
         </div>
 
+        <div style={{ marginBottom: '40px' }}>
+          <div style={{ fontFamily: 'var(--font-display)', fontSize: '18px', letterSpacing: '0.06em', marginBottom: '16px' }}>PERSONALIZATION</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '12px' }}>
+            {[
+              { id: 'stone', label: 'Stone & Gold', primary: '#e8ff47', bg: '#030609' },
+              { id: 'ocean', label: 'Deep Ocean', primary: '#2ed5ff', bg: '#010a13' },
+              { id: 'midnight', label: 'Midnight', primary: '#a55eea', bg: '#09030c' }
+            ].map(t => (
+              <button 
+                key={t.id}
+                onClick={() => {
+                  document.body.className = `theme-${t.id}`;
+                  localStorage.setItem('gym-theme', t.id);
+                }}
+                className="btn btn-ghost" 
+                style={{ 
+                  flexDirection: 'column', 
+                  gap: '8px', 
+                  height: 'auto', 
+                  padding: '16px',
+                  border: document.body.className === `theme-${t.id}` ? '2px solid var(--accent)' : '1px solid var(--border)'
+                }}
+              >
+                <div style={{ width: '100%', height: '40px', background: t.bg, border: `2px solid ${t.primary}`, borderRadius: '4px' }} />
+                <span style={{ fontSize: '11px' }}>{t.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
           <button
             onClick={handleSignOut}

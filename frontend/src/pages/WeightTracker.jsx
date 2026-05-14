@@ -20,6 +20,8 @@ export default function WeightTracker() {
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({ date: new Date().toISOString().split('T')[0], weight: '', body_fat: '' });
   const [submitting, setSubmitting] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [height, setHeight] = useState('');
   const { showToast, ToastComponent } = useToast();
 
   const fetchLogs = async () => {
@@ -40,15 +42,48 @@ export default function WeightTracker() {
     if (!form.weight) return showToast('Please enter a weight', 'error');
     setSubmitting(true);
     try {
-      await weightAPI.log({ ...form, weight: parseFloat(form.weight), body_fat: form.body_fat ? parseFloat(form.body_fat) : null });
-      showToast('Weight logged successfully!');
+      const payload = { ...form, weight: parseFloat(form.weight), body_fat: form.body_fat ? parseFloat(form.body_fat) : null };
+      if (editingId) {
+        await weightAPI.update(editingId, payload);
+        showToast('Weight updated successfully!');
+        setEditingId(null);
+      } else {
+        await weightAPI.log(payload);
+        showToast('Weight logged successfully!');
+      }
       setForm({ date: new Date().toISOString().split('T')[0], weight: '', body_fat: '' });
       fetchLogs();
     } catch (err) {
-      showToast(err || 'Failed to log weight', 'error');
+      showToast(err || 'Failed to save weight', 'error');
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleEdit = (log) => {
+    setEditingId(log.id);
+    setForm({
+      date: log.date,
+      weight: String(log.weight),
+      body_fat: log.body_fat ? String(log.body_fat) : ''
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Delete this entry?')) return;
+    try {
+      await weightAPI.delete(id);
+      showToast('Entry deleted');
+      fetchLogs();
+    } catch (err) {
+      showToast(err || 'Failed to delete', 'error');
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setForm({ date: new Date().toISOString().split('T')[0], weight: '', body_fat: '' });
   };
 
   const chartData = {
@@ -74,6 +109,20 @@ export default function WeightTracker() {
   const first = logs[0];
   const change = latest && first ? (latest.weight - first.weight).toFixed(1) : null;
 
+  const calculateBMI = (w, h) => {
+    if (!w || !h) return null;
+    const hMeter = h / 100;
+    return (w / (hMeter * hMeter)).toFixed(1);
+  };
+
+  const getBMICategory = (val) => {
+    const bmi = parseFloat(val);
+    if (bmi < 18.5) return { label: 'Underweight', color: 'var(--blue)' };
+    if (bmi < 25) return { label: 'Normal', color: 'var(--green)' };
+    if (bmi < 30) return { label: 'Overweight', color: 'var(--orange)' };
+    return { label: 'Obese', color: 'var(--red)' };
+  };
+
   return (
     <div>
       {ToastComponent}
@@ -85,7 +134,14 @@ export default function WeightTracker() {
       <div className="grid-2" style={{ marginBottom: '24px', alignItems: 'start' }}>
         {/* Log form */}
         <div className="card">
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: '18px', letterSpacing: '0.06em', marginBottom: '20px' }}>LOG WEIGHT</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: '18px', letterSpacing: '0.06em' }}>
+              {editingId ? 'EDIT WEIGHT' : 'LOG WEIGHT'}
+            </div>
+            {editingId && (
+              <button onClick={cancelEdit} className="btn btn-ghost" style={{ padding: '5px 10px', fontSize: '11px' }}>CANCEL</button>
+            )}
+          </div>
           <form onSubmit={handleSubmit}>
             <div style={{ marginBottom: '14px' }}>
               <label className="input-label">Date</label>
@@ -100,7 +156,7 @@ export default function WeightTracker() {
               <input type="number" step="0.1" className="input" placeholder="18.5" value={form.body_fat} onChange={e => setForm({...form, body_fat: e.target.value})} />
             </div>
             <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={submitting}>
-              {submitting ? 'Saving...' : '+ LOG WEIGHT'}
+              {submitting ? 'Saving...' : editingId ? 'UPDATE WEIGHT' : '+ LOG WEIGHT'}
             </button>
           </form>
         </div>
@@ -118,6 +174,29 @@ export default function WeightTracker() {
               <div style={{ fontFamily: 'var(--font-display)', fontSize: '32px', color: s.color, lineHeight: 1, marginTop: '6px' }}>{s.value}</div>
             </div>
           ))}
+          {latest && (
+            <div className="card" style={{ padding: '20px' }}>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: '16px', letterSpacing: '0.06em', marginBottom: '16px' }}>BMI CALCULATOR</div>
+              <div style={{ marginBottom: '16px' }}>
+                <label className="input-label">Your Height (cm)</label>
+                <input type="number" className="input" placeholder="e.g. 175" value={height} onChange={e => setHeight(e.target.value)} />
+                <p style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '4px' }}>Using latest weight: {latest.weight}kg</p>
+              </div>
+              {height && (
+                <div style={{ padding: '12px', background: 'var(--bg-elevated)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Current BMI</div>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', marginTop: '4px' }}>
+                    <div style={{ fontFamily: 'var(--font-display)', fontSize: '32px', color: 'var(--accent)' }}>
+                      {calculateBMI(latest.weight, height)}
+                    </div>
+                    <div style={{ fontSize: '14px', fontWeight: '700', color: getBMICategory(calculateBMI(latest.weight, height)).color }}>
+                      {getBMICategory(calculateBMI(latest.weight, height)).label.toUpperCase()}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -152,7 +231,15 @@ export default function WeightTracker() {
                   const diff = prev ? (log.weight - prev.weight).toFixed(1) : null;
                   return (
                     <tr key={log.id}>
-                      <td style={{ color: 'var(--text-primary)' }}>{log.date}</td>
+                      <td style={{ color: 'var(--text-primary)' }}>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <div style={{ display: 'flex', gap: '2px' }}>
+                            <button onClick={() => handleEdit(log)} className="btn btn-ghost" style={{ padding: '2px 6px', fontSize: '9px', opacity: 0.8 }}>Edit</button>
+                            <button onClick={() => handleDelete(log.id)} className="btn btn-ghost" style={{ padding: '2px 6px', fontSize: '9px', opacity: 0.8, color: 'var(--red)' }}>Del</button>
+                          </div>
+                          {log.date}
+                        </div>
+                      </td>
                       <td style={{ fontFamily: 'var(--font-display)', fontSize: '18px', color: 'var(--accent)' }}>{log.weight} kg</td>
                       <td>{log.body_fat ? `${log.body_fat}%` : '—'}</td>
                       <td>

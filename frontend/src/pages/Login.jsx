@@ -12,25 +12,83 @@ export default function Login() {
       justifyContent: 'center',
       minHeight: '100vh',
       padding: '20px',
-      background: '#f4f4f5' // Light theme to match GymTracker
+      background: 'var(--bg)',
+      position: 'relative',
+      overflow: 'hidden'
     }}>
+      {/* Decorative blobs */}
       <div style={{
-        maxWidth: '400px',
+        position: 'absolute',
+        top: '-10%',
+        right: '-10%',
+        width: '40vw',
+        height: '40vw',
+        background: 'radial-gradient(circle, var(--accent-dim) 0%, transparent 70%)',
+        zIndex: 0
+      }} />
+      <div style={{
+        position: 'absolute',
+        bottom: '-10%',
+        left: '-10%',
+        width: '30vw',
+        height: '30vw',
+        background: 'radial-gradient(circle, rgba(46,213,255,0.05) 0%, transparent 70%)',
+        zIndex: 0
+      }} />
+
+      <div className="card" style={{
+        maxWidth: '420px',
         width: '100%',
-        padding: '30px',
-        background: '#ffffff',
-        borderRadius: '12px',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+        padding: '40px',
+        zIndex: 1,
+        position: 'relative'
       }}>
-        <h1 style={{ textAlign: 'center', marginBottom: '20px', color: '#18181b' }}>GymTracker AI</h1>
-        <p style={{ textAlign: 'center', marginBottom: '30px', color: '#71717a' }}>Sign in to start tracking</p>
+        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+          <h1 className="section-title" style={{ fontSize: '42px', marginBottom: '8px' }}>GYMTRACKER AI</h1>
+          <p className="section-subtitle">YOUR ELITE TRAINING COMPANION</p>
+        </div>
         
         <Auth
           supabaseClient={supabase}
-          appearance={{ theme: ThemeSupa }}
+          appearance={{ 
+            theme: ThemeSupa,
+            variables: {
+              default: {
+                colors: {
+                  brand: 'var(--accent)',
+                  brandAccent: 'var(--accent)',
+                  inputBackground: 'var(--bg-elevated)',
+                  inputText: 'var(--text-primary)',
+                  inputBorder: 'var(--border)',
+                  inputBorderFocus: 'var(--accent)',
+                  inputPlaceholder: 'var(--text-muted)',
+                },
+                radii: {
+                  borderRadiusButton: 'var(--radius-sm)',
+                  buttonBorderRadius: 'var(--radius-sm)',
+                  inputBorderRadius: 'var(--radius-sm)',
+                },
+                fonts: {
+                  bodyFontFamily: 'var(--font-body)',
+                  buttonFontFamily: 'var(--font-body)',
+                  inputFontFamily: 'var(--font-body)',
+                  labelFontFamily: 'var(--font-body)',
+                },
+              }
+            },
+            className: {
+              button: 'btn',
+              input: 'input',
+              label: 'input-label',
+            }
+          }}
           providers={['google', 'github']}
-          theme="light"
+          theme="dark"
         />
+
+        <div style={{ marginTop: '24px', textAlign: 'center', fontSize: '11px', color: 'var(--text-muted)', letterSpacing: '0.05em' }}>
+          &copy; 2026 GYMTRACKER PRO • ELITE EDITION
+        </div>
       </div>
     </div>
   );

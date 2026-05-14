@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Line, Bar } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler } from 'chart.js';
-import { weightAPI, mealsAPI, workoutLogAPI, reportsAPI } from '../utils/api';
+import { weightAPI, mealsAPI, workoutLogAPI, reportsAPI, prAPI } from '../utils/api';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler);
 
@@ -18,31 +18,48 @@ export default function Progress() {
   const [weightData, setWeightData] = useState([]);
   const [calData, setCalData] = useState([]);
   const [workoutDates, setWorkoutDates] = useState([]);
+  const [workoutLogs, setWorkoutLogs] = useState([]);
+  const [prs, setPrs] = useState([]);
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [height, setHeight] = useState('');
+  const [prForm, setPrForm] = useState({ exercise: '', weight: '', date: new Date().toISOString().split('T')[0] });
 
-  useEffect(() => {
+  const fetchData = () => {
     Promise.all([
       weightAPI.get({ limit: 60 }),
       mealsAPI.get({ limit: 200 }),
       workoutLogAPI.get({ limit: 100 }),
       reportsAPI.weekly(),
-    ]).then(([wRes, mRes, wlRes, rRes]) => {
+      prAPI.get(),
+    ]).then(([wRes, mRes, wlRes, rRes, prRes]) => {
       setWeightData([...wRes.data].reverse());
-      // Aggregate calories by date
+      setWorkoutLogs(wlRes.data);
+      setPrs(prRes.data);
+      
       const calMap = {};
       mRes.data.forEach(m => {
-        if (!calMap[m.date]) calMap[m.date] = 0;
-        calMap[m.date] += m.calories;
+        calMap[m.date] = (calMap[m.date] || 0) + m.calories;
       });
       setCalData(Object.entries(calMap).sort((a,b) => a[0].localeCompare(b[0])).slice(-30));
       
-      // Unique workout dates
       const dates = [...new Set(wlRes.data.map(l => l.date))].sort();
       setWorkoutDates(dates.slice(-30));
       setReport(rRes.data);
     }).catch(() => {}).finally(() => setLoading(false));
-  }, []);
+  };
+
+  useEffect(() => { fetchData(); }, []);
+
+  const handlePrSubmit = async (e) => {
+    e.preventDefault();
+    if (!prForm.exercise || !prForm.weight) return;
+    try {
+      await prAPI.update(prForm);
+      setPrForm({ exercise: '', weight: '', date: new Date().toISOString().split('T')[0] });
+      fetchData();
+    } catch {}
+  };
 
   const weightChartData = {
     labels: weightData.map(d => d.date.slice(5)),
@@ -86,6 +103,51 @@ export default function Progress() {
   const startW = weightChange?.start_weight;
   const endW = weightChange?.end_weight;
   const diff = startW && endW ? (endW - startW).toFixed(1) : null;
+  const latestWeight = weightData[weightData.length - 1]?.weight;
+
+  const calculateBMI = (w, h) => {
+    if (!w || !h) return null;
+    const hMeter = h / 100;
+    return (w / (hMeter * hMeter)).toFixed(1);
+  };
+
+  const getBMICategory = (val) => {
+    const bmi = parseFloat(val);
+    if (bmi < 18.5) return { label: 'Underweight', color: 'var(--blue)' };
+    if (bmi < 25) return { label: 'Normal', color: 'var(--green)' };
+    if (bmi < 30) return { label: 'Overweight', color: 'var(--orange)' };
+    return { label: 'Obese', color: 'var(--red)' };
+  };
+
+  const muscleGroups = {
+    Chest: ['bench', 'chest', 'pushup', 'fly'],
+    Back: ['pullup', 'row', 'deadlift', 'lat', 'back'],
+    Legs: ['squat', 'lunge', 'leg', 'deadlift', 'calf'],
+    Shoulders: ['press', 'shoulder', 'lateral', 'front'],
+    Arms: ['curl', 'extension', 'bicep', 'tricep', 'arm'],
+    Core: ['plank', 'crunch', 'abs', 'core']
+  };
+
+  const recentLogs = workoutLogs.filter(l => {
+    const d = new Date(l.date);
+    const fourteenDaysAgo = new Date();
+    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+    return d >= fourteenDaysAgo && l.completed;
+  });
+
+  const muscleIntensity = {};
+  Object.keys(muscleGroups).forEach(g => muscleIntensity[g] = 0);
+
+  recentLogs.forEach(l => {
+    const ex = l.exercise.toLowerCase();
+    Object.entries(muscleGroups).forEach(([group, keywords]) => {
+      if (keywords.some(k => ex.includes(k))) {
+        muscleIntensity[group]++;
+      }
+    });
+  });
+
+  const maxIntensity = Math.max(...Object.values(muscleIntensity), 1);
 
   return (
     <div>
@@ -152,6 +214,33 @@ export default function Progress() {
             <div style={{ height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', border: '1px dashed var(--border)', borderRadius: 'var(--radius-sm)' }}>No workout data yet</div>
           )}
         </div>
+
+        {/* BMI Calculator */}
+        <div className="card">
+          <div style={{ fontFamily: 'var(--font-display)', fontSize: '18px', letterSpacing: '0.06em', marginBottom: '16px' }}>BMI CALCULATOR</div>
+          <div style={{ marginBottom: '16px' }}>
+            <label className="input-label">Height (cm)</label>
+            <input type="number" className="input" placeholder="e.g. 175" value={height} onChange={e => setHeight(e.target.value)} />
+            {latestWeight && <p style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '4px' }}>Using latest weight: {latestWeight}kg</p>}
+          </div>
+          {height && latestWeight ? (
+            <div style={{ padding: '16px', background: 'var(--bg-elevated)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Current BMI Score</div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', marginTop: '6px' }}>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: '36px', color: 'var(--accent)' }}>
+                  {calculateBMI(latestWeight, height)}
+                </div>
+                <div style={{ fontSize: '16px', fontWeight: '700', color: getBMICategory(calculateBMI(latestWeight, height)).color }}>
+                  {getBMICategory(calculateBMI(latestWeight, height)).label.toUpperCase()}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', border: '1px dashed var(--border)', borderRadius: 'var(--radius-sm)', fontSize: '13px' }}>
+              {!latestWeight ? 'Log your weight first' : 'Enter height to see BMI'}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Heatmap calendar */}
@@ -182,6 +271,55 @@ export default function Progress() {
             <span style={{ width: '12px', height: '12px', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: '2px', display: 'inline-block' }} />
             Rest day
           </span>
+        </div>
+      </div>
+
+      <div className="grid-2" style={{ marginTop: '24px' }}>
+        {/* Muscle Focus Heatmap */}
+        <div className="card">
+          <div style={{ fontFamily: 'var(--font-display)', fontSize: '18px', letterSpacing: '0.06em', marginBottom: '16px' }}>MUSCLE FOCUS (LAST 14 DAYS)</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            {Object.entries(muscleIntensity).map(([group, val]) => (
+              <div key={group}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
+                  <span style={{ fontWeight: '600' }}>{group.toUpperCase()}</span>
+                  <span style={{ color: 'var(--text-muted)' }}>{val} sets</span>
+                </div>
+                <div style={{ height: '6px', background: 'var(--bg-elevated)', borderRadius: '3px', overflow: 'hidden' }}>
+                  <div style={{ 
+                    height: '100%', 
+                    width: `${(val / maxIntensity) * 100}%`, 
+                    background: `linear-gradient(90deg, #2ed5ff, ${val > 5 ? '#e8ff47' : '#2ed5ff'})`,
+                    transition: 'width 1s cubic-bezier(0.4, 0, 0.2, 1)',
+                    borderRadius: '3px'
+                  }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* PR Tracker */}
+        <div className="card">
+          <div style={{ fontFamily: 'var(--font-display)', fontSize: '18px', letterSpacing: '0.06em', marginBottom: '16px' }}>PERSONAL RECORDS</div>
+          <form onSubmit={handlePrSubmit} style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+            <input type="text" className="input" placeholder="Exercise" style={{ flex: 2 }} value={prForm.exercise} onChange={e => setPrForm({...prForm, exercise: e.target.value})} />
+            <input type="number" className="input" placeholder="Weight" style={{ flex: 1 }} value={prForm.weight} onChange={e => setPrForm({...prForm, weight: e.target.value})} />
+            <button type="submit" className="btn btn-primary" style={{ padding: '0 20px' }}>SET</button>
+          </form>
+          <div style={{ maxHeight: '240px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {prs.length > 0 ? prs.map(pr => (
+              <div key={pr.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: 'var(--bg-elevated)', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                <span style={{ fontWeight: '600', fontSize: '13px' }}>{pr.exercise}</span>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+                  <span style={{ fontFamily: 'var(--font-display)', fontSize: '18px', color: 'var(--accent)' }}>{pr.weight}</span>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>KG</span>
+                </div>
+              </div>
+            )) : (
+              <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '20px', fontSize: '12px' }}>No records set yet</div>
+            )}
+          </div>
         </div>
       </div>
     </div>

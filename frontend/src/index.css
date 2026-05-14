@@ -1,33 +1,57 @@
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
 
 :root {
-  --bg: #070b0f;
-  --bg-card: #0d1117;
-  --bg-elevated: #131b24;
-  --border: #1a2535;
-  --border-bright: #253549;
+  --bg: #030609;
+  --bg-card: rgba(13, 17, 23, 0.7);
+  --bg-elevated: rgba(19, 27, 36, 0.6);
+  --border: rgba(255, 255, 255, 0.08);
+  --border-bright: rgba(255, 255, 255, 0.15);
   --accent: #e8ff47;
-  --accent-dim: rgba(232, 255, 71, 0.12);
-  --accent-glow: rgba(232, 255, 71, 0.35);
+  --accent-dim: rgba(232, 255, 71, 0.1);
+  --accent-glow: rgba(232, 255, 71, 0.4);
   --red: #ff4757;
   --blue: #2ed5ff;
   --orange: #ff9f43;
   --green: #26de81;
   --purple: #a55eea;
-  --text-primary: #eef2f7;
-  --text-secondary: #6e8599;
-  --text-muted: #344a61;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #475569;
   --font-display: 'Bebas Neue', sans-serif;
   --font-body: 'DM Sans', sans-serif;
   --font-mono: 'DM Mono', monospace;
-  --radius: 14px;
-  --radius-sm: 9px;
-  --radius-md: 12px;
-  --radius-lg: 20px;
-  --sidebar-w: 240px;
+  --radius: 20px;
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --sidebar-w: 260px;
   --header-h: 64px;
-  --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  --content-padding: 32px;
+  --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --content-padding: 40px;
+  --glass: blur(12px) saturate(180%);
+}
+
+body.theme-ocean {
+  --bg: #010a13;
+  --bg-card: rgba(1, 15, 28, 0.7);
+  --bg-elevated: rgba(2, 22, 41, 0.6);
+  --accent: #2ed5ff;
+  --accent-dim: rgba(46, 213, 255, 0.1);
+  --accent-glow: rgba(46, 213, 255, 0.4);
+}
+
+body.theme-midnight {
+  --bg: #09030c;
+  --bg-card: rgba(20, 5, 28, 0.7);
+  --bg-elevated: rgba(30, 10, 42, 0.6);
+  --accent: #a55eea;
+  --accent-dim: rgba(165, 94, 234, 0.1);
+  --accent-glow: rgba(165, 94, 234, 0.4);
+}
+
+body.theme-stone {
+  --bg: #030609;
+  --accent: #e8ff47;
 }
 
 @media (max-width: 1024px) {
@@ -42,6 +66,9 @@
 
 html, body {
   background: var(--bg);
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(232, 255, 71, 0.03) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(46, 213, 255, 0.03) 0px, transparent 50%);
   color: var(--text-primary);
   font-family: var(--font-body);
   font-size: 14px;
@@ -55,10 +82,10 @@ html, body {
 /* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 2px; }
+::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 10px; }
 
 /* ── Typography ── */
-.font-display { font-family: var(--font-display); letter-spacing: 0.05em; }
+.font-display { font-family: var(--font-display); letter-spacing: 0.08em; }
 .font-mono { font-family: var(--font-mono); }
 .text-accent { color: var(--accent); }
 .text-secondary { color: var(--text-secondary); }
@@ -71,18 +98,22 @@ html, body {
 /* ── Cards ── */
 .card {
   background: var(--bg-card);
+  backdrop-filter: var(--glass);
+  -webkit-backdrop-filter: var(--glass);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 20px;
-  transition: border-color var(--transition), transform var(--transition), box-shadow var(--transition);
+  padding: 24px;
+  transition: all var(--transition);
+  box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.2);
 }
 .card:hover {
   border-color: var(--border-bright);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+  box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.5);
+  transform: translateY(-2px);
 }
 .card-glow:hover {
   border-color: rgba(232,255,71,0.3);
-  box-shadow: 0 0 30px rgba(232,255,71,0.07);
+  box-shadow: 0 0 40px rgba(232,255,71,0.1);
 }
 
 /* ── Buttons ── */

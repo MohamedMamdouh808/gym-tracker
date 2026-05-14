@@ -7,6 +7,7 @@ const navItems = [
   { id: 'workout-plan', label: 'Workout Plan', icon: '◫' },
   { id: 'workout-log', label: 'Workout Log', icon: '◪' },
   { id: 'progress', label: 'Progress', icon: '◬' },
+  { id: 'calculators', label: 'Calculators', icon: '⚡' },
   { id: 'ai-coach', label: 'AI Coach', icon: '✨' },
 ];
 
