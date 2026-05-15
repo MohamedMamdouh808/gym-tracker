@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { workoutPlanAPI } from '../utils/api';
+import { workoutPlanAPI, communityAPI } from '../utils/api';
 import { useToast } from '../hooks/useToast';
 import DeleteButton from '../components/DeleteButton';
 
@@ -16,10 +16,46 @@ const EXERCISES = {
 };
 
 const COMMUNITY_PLANS = [
-  { id: 'c1', name: 'PPL Hypertrophy', author: 'Coach Mike', exercises: 18, rating: 4.9, difficulty: 'Intermediate' },
-  { id: 'c2', name: '5x5 Strength', author: 'PowerLifter7', exercises: 12, rating: 4.8, difficulty: 'Beginner' },
-  { id: 'c3', name: 'Arnold Split', author: 'ClassicPhysique', exercises: 24, rating: 5.0, difficulty: 'Advanced' },
+  { id: 'c1', name: 'PPL Hypertrophy', author: 'Coach Mike', exercises: 9, rating: 4.9, difficulty: 'Intermediate' },
+  { id: 'c2', name: '5x5 Strength', author: 'PowerLifter7', exercises: 9, rating: 4.8, difficulty: 'Beginner' },
+  { id: 'c3', name: 'Arnold Split', author: 'ClassicPhysique', exercises: 9, rating: 5.0, difficulty: 'Advanced' },
 ];
+
+const COMMUNITY_PLANS_DATA = {
+  c1: [ // PPL Hypertrophy
+    { day_of_week: 'Monday', exercise: 'Bench Press', sets: 4, reps: 10 },
+    { day_of_week: 'Monday', exercise: 'Incline Dumbbell Press', sets: 3, reps: 12 },
+    { day_of_week: 'Monday', exercise: 'Lateral Raises', sets: 4, reps: 15 },
+    { day_of_week: 'Tuesday', exercise: 'Pull-ups', sets: 4, reps: 10 },
+    { day_of_week: 'Tuesday', exercise: 'Barbell Row', sets: 3, reps: 8 },
+    { day_of_week: 'Tuesday', exercise: 'Bicep Curls', sets: 3, reps: 12 },
+    { day_of_week: 'Wednesday', exercise: 'Squats', sets: 4, reps: 8 },
+    { day_of_week: 'Wednesday', exercise: 'Leg Press', sets: 3, reps: 12 },
+    { day_of_week: 'Wednesday', exercise: 'Leg Curls', sets: 3, reps: 15 },
+  ],
+  c2: [ // 5x5 Strength
+    { day_of_week: 'Monday', exercise: 'Squats', sets: 5, reps: 5 },
+    { day_of_week: 'Monday', exercise: 'Bench Press', sets: 5, reps: 5 },
+    { day_of_week: 'Monday', exercise: 'Barbell Row', sets: 5, reps: 5 },
+    { day_of_week: 'Wednesday', exercise: 'Squats', sets: 5, reps: 5 },
+    { day_of_week: 'Wednesday', exercise: 'Overhead Press', sets: 5, reps: 5 },
+    { day_of_week: 'Wednesday', exercise: 'Deadlift', sets: 1, reps: 5 },
+    { day_of_week: 'Friday', exercise: 'Squats', sets: 5, reps: 5 },
+    { day_of_week: 'Friday', exercise: 'Bench Press', sets: 5, reps: 5 },
+    { day_of_week: 'Friday', exercise: 'Barbell Row', sets: 5, reps: 5 },
+  ],
+  c3: [ // Arnold Split
+    { day_of_week: 'Monday', exercise: 'Bench Press', sets: 5, reps: 10 },
+    { day_of_week: 'Monday', exercise: 'Deadlift', sets: 5, reps: 10 },
+    { day_of_week: 'Monday', exercise: 'Barbell Row', sets: 5, reps: 10 },
+    { day_of_week: 'Tuesday', exercise: 'Overhead Press', sets: 5, reps: 10 },
+    { day_of_week: 'Tuesday', exercise: 'Lateral Raise', sets: 5, reps: 10 },
+    { day_of_week: 'Tuesday', exercise: 'Bicep Curl', sets: 5, reps: 10 },
+    { day_of_week: 'Wednesday', exercise: 'Squats', sets: 5, reps: 10 },
+    { day_of_week: 'Wednesday', exercise: 'Leg Curl', sets: 5, reps: 10 },
+    { day_of_week: 'Wednesday', exercise: 'Leg Extension', sets: 5, reps: 10 },
+  ]
+};
 
 export default function WorkoutPlanner() {
   const [activeTab, setActiveTab] = useState('my-plan');
@@ -32,6 +68,9 @@ export default function WorkoutPlanner() {
   const [editingId, setEditingId] = useState(null);
   const { showToast, ToastComponent } = useToast();
 
+  const [communityPlans, setCommunityPlans] = useState([]);
+  const [loadingCommunity, setLoadingCommunity] = useState(false);
+
   const fetchPlans = async () => {
     try {
       const res = await workoutPlanAPI.get();
@@ -40,7 +79,19 @@ export default function WorkoutPlanner() {
     finally { setLoading(false); }
   };
 
-  useEffect(() => { fetchPlans(); }, []);
+  const fetchCommunityPlans = async () => {
+    setLoadingCommunity(true);
+    try {
+      const res = await communityAPI.plans();
+      setCommunityPlans(res.data || []);
+    } catch { setCommunityPlans([]); }
+    finally { setLoadingCommunity(false); }
+  };
+
+  useEffect(() => { 
+    fetchPlans(); 
+    fetchCommunityPlans();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -86,9 +137,55 @@ export default function WorkoutPlanner() {
     } catch { showToast('Failed to delete', 'error'); }
   };
 
-  const adoptPlan = (plan) => {
-    showToast(`Adopting ${plan.name}... (Template applied)`);
-    // Logic to batch create exercises would go here
+  const adoptPlan = async (template) => {
+    // If it's a dynamic community plan, use its 'exercises' array. 
+    // Otherwise fallback to hardcoded COMMUNITY_PLANS_DATA.
+    const exercises = template.exercises || COMMUNITY_PLANS_DATA[template.id];
+    if (!exercises || exercises.length === 0) return showToast('This plan has no exercises.', 'error');
+
+    showToast(`Adopting ${template.name}...`, 'success');
+    setLoading(true);
+    try {
+      // Create all exercises from the template
+      for (const ex of exercises) {
+        await workoutPlanAPI.create({
+          day_of_week: ex.day_of_week,
+          exercise: ex.exercise,
+          sets: ex.sets,
+          reps: ex.reps
+        });
+      }
+      showToast('Program adopted successfully!', 'success');
+      setActiveTab('my-plan');
+      fetchPlans();
+    } catch (err) {
+      showToast('Failed to adopt program', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleShareProgram = async () => {
+    if (plans.length === 0) return showToast('Your program is empty.', 'error');
+    
+    const name = window.prompt("Enter a name for your program (e.g. 'Push Pull Legs 2.0'):");
+    if (!name) return;
+
+    const author = window.prompt("Enter your display name (e.g. 'FitnessPro'):");
+    if (!author) return;
+
+    showToast('Sharing program...', 'success');
+    try {
+      await communityAPI.share({
+        name,
+        author,
+        difficulty: 'Intermediate' // Can be enhanced later to select difficulty
+      });
+      showToast('Program shared successfully! Check the Community tab.', 'success');
+      fetchCommunityPlans();
+    } catch (err) {
+      showToast(err || 'Failed to share program', 'error');
+    }
   };
 
   const dayPlans = plans.filter(p => p.day_of_week === selectedDay);
@@ -267,19 +364,19 @@ export default function WorkoutPlanner() {
         </div>
       ) : (
         <div className="grid-3">
-          {COMMUNITY_PLANS.map(plan => (
+          {[...COMMUNITY_PLANS, ...communityPlans].map(plan => (
             <div key={plan.id} className="card hover-lift">
               <div className="flex justify-between items-start" style={{ marginBottom: '16px' }}>
                 <div>
-                  <div className="badge badge-accent" style={{ marginBottom: '8px' }}>{plan.difficulty.toUpperCase()}</div>
+                  <div className="badge badge-accent" style={{ marginBottom: '8px' }}>{(plan.difficulty || 'Intermediate').toUpperCase()}</div>
                   <h3 style={{ margin: 0, fontSize: '18px', fontFamily: 'var(--font-display)' }}>{plan.name}</h3>
                 </div>
-                <div style={{ fontSize: '14px', color: 'var(--accent)', fontWeight: '700' }}>★ {plan.rating}</div>
+                <div style={{ fontSize: '14px', color: 'var(--accent)', fontWeight: '700' }}>★ {plan.rating || '5.0'}</div>
               </div>
               
               <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '20px' }}>
                 <div style={{ marginBottom: '4px' }}>Author: <span style={{ color: 'var(--text-primary)' }}>{plan.author}</span></div>
-                <div>Exercises: <span style={{ color: 'var(--text-primary)' }}>{plan.exercises}</span></div>
+                <div>Exercises: <span style={{ color: 'var(--text-primary)' }}>{Array.isArray(plan.exercises) ? plan.exercises.length : plan.exercises}</span></div>
               </div>
 
               <button 
@@ -291,10 +388,10 @@ export default function WorkoutPlanner() {
               </button>
             </div>
           ))}
-          <div className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px dashed var(--border)', background: 'transparent' }}>
+          <div onClick={handleShareProgram} className="card hover-lift" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px dashed var(--border)', background: 'transparent' }}>
             <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
               <div style={{ fontSize: '24px', marginBottom: '8px' }}>+</div>
-              <div style={{ fontSize: '12px' }}>SHARE YOUR PLAN</div>
+              <div style={{ fontSize: '12px', fontWeight: 'bold' }}>SHARE YOUR PLAN</div>
             </div>
           </div>
         </div>

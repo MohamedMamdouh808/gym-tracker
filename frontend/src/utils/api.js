@@ -84,4 +84,9 @@ export const inbodyAPI = {
   }),
 };
 
+export const communityAPI = {
+  share: (data) => API.post('/api/community/share', data),
+  plans: () => API.get('/api/community/plans'),
+};
+
 export default API;

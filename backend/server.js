@@ -311,6 +311,55 @@ app.delete('/api/workout-plan/:id', async (req, res) => {
   res.json({ success: true, message: 'Deleted' });
 });
 
+// ============ COMMUNITY SHARED PLANS ============
+app.post('/api/community/share', async (req, res) => {
+  const user_id = getUserId(req);
+  const { name, difficulty, description, author } = req.body;
+
+  if (!name || !author) return res.status(400).json({ error: 'name and author required' });
+
+  const authSupabase = getAuthenticatedSupabase(req);
+
+  // 1. Fetch user's current workout plan
+  const { data: userPlan, error: fetchErr } = await authSupabase
+    .from('workout_plans')
+    .select('day_of_week, exercise, sets, reps')
+    .eq('user_id', user_id);
+
+  if (fetchErr) return res.status(500).json({ error: fetchErr.message });
+  if (!userPlan || userPlan.length === 0) {
+    return res.status(400).json({ error: 'Your program is empty. Add exercises before sharing.' });
+  }
+
+  // 2. Save to community_programs
+  const payload = {
+    user_id,
+    name,
+    author,
+    difficulty: difficulty || 'Intermediate',
+    description: description || '',
+    exercises: userPlan
+  };
+
+  const { data, error } = await authSupabase
+    .from('community_programs')
+    .insert([payload])
+    .select();
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.status(201).json({ success: true, data: data[0] });
+});
+
+app.get('/api/community/plans', async (req, res) => {
+  const { data, error } = await getAuthenticatedSupabase(req)
+    .from('community_programs')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ success: true, data: data || [] });
+});
+
 // ============ WORKOUT LOGS ============
 app.post('/api/workout-log', async (req, res) => {
   const { date, exercise, sets = 3, reps = 10, weight = 0, completed = 1 } = req.body;
