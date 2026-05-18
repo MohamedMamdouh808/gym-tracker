@@ -1,18 +1,27 @@
 import React from 'react';
+import { 
+  LayoutDashboard, Scale, UtensilsCrossed, CalendarDays, 
+  ClipboardList, TrendingUp, Calculator, ScanLine, Sparkles
+} from 'lucide-react';
+import { useProfile } from '../context/ProfileContext';
 
 const navItems = [
-  { id: 'dashboard', label: 'Dashboard', icon: '⬡' },
-  { id: 'weight', label: 'Weight', icon: '◈' },
-  { id: 'meals', label: 'Meals', icon: '◉' },
-  { id: 'workout-plan', label: 'Workout Plan', icon: '◫' },
-  { id: 'workout-log', label: 'Workout Log', icon: '◪' },
-  { id: 'progress', label: 'Progress', icon: '◬' },
-  { id: 'calculators', label: 'Calculators', icon: '⚡' },
-  { id: 'inbody', label: 'InBody Scan', icon: '📷' },
-  { id: 'ai-coach', label: 'AI Coach', icon: '✨' },
+  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'weight', label: 'Weight', icon: Scale },
+  { id: 'meals', label: 'Meals', icon: UtensilsCrossed },
+  { id: 'workout-plan', label: 'Workout Plan', icon: CalendarDays },
+  { id: 'workout-log', label: 'Workout Log', icon: ClipboardList },
+  { id: 'progress', label: 'Progress', icon: TrendingUp },
+  { id: 'calculators', label: 'Calculators', icon: Calculator },
+  { id: 'inbody', label: 'InBody Scan', icon: ScanLine },
+  { id: 'ai-coach', label: 'AI Coach', icon: Sparkles },
 ];
 
 export default function Sidebar({ activePage, onNavigate, isOpen }) {
+  const { displayName, avatarLetter } = useProfile();
+  const letter = avatarLetter || displayName?.[0] || 'A';
+  const name = displayName || 'Athlete';
+
   return (
     <aside 
       className={`sidebar ${isOpen ? 'active' : ''}`}
@@ -23,15 +32,16 @@ export default function Sidebar({ activePage, onNavigate, isOpen }) {
         borderRight: '1px solid var(--border)',
         display: 'flex',
         flexDirection: 'column',
-        padding: '24px 0',
         position: 'fixed',
         top: 0,
         left: 0,
         zIndex: 100,
+        overflowY: 'auto',
+        scrollbarWidth: 'none',
+        msOverflowStyle: 'none',
       }}
     >
-      {/* Logo */}
-      <div style={{ padding: '0 24px 28px', borderBottom: '1px solid var(--border)' }}>
+      <div style={{ padding: '24px 24px 28px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
         <div style={{ fontFamily: 'var(--font-display)', fontSize: '24px', letterSpacing: '0.08em', color: 'var(--text-primary)' }}>
           GYM<span style={{ color: 'var(--accent)' }}>TRACKER</span>
         </div>
@@ -40,10 +50,10 @@ export default function Sidebar({ activePage, onNavigate, isOpen }) {
         </div>
       </div>
 
-      {/* Nav */}
-      <nav style={{ flex: 1, padding: '16px 12px' }}>
+      <nav style={{ flex: 1, padding: '16px 12px', overflowY: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
         {navItems.map(item => {
           const isActive = activePage === item.id;
+          const Icon = item.icon;
           return (
             <button
               key={item.id}
@@ -70,15 +80,14 @@ export default function Sidebar({ activePage, onNavigate, isOpen }) {
               onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = 'var(--bg-elevated)'; e.currentTarget.style.color = 'var(--text-primary)'; }}}
               onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)'; }}}
             >
-              <span style={{ fontSize: '16px', opacity: isActive ? 1 : 0.6 }}>{item.icon}</span>
+              <Icon size={16} strokeWidth={isActive ? 2.5 : 1.5} style={{ opacity: isActive ? 1 : 0.6 }} />
               {item.label}
             </button>
           );
         })}
       </nav>
 
-      {/* Footer / Profile */}
-      <div style={{ padding: '16px 12px', borderTop: '1px solid var(--border)' }}>
+      <div style={{ padding: '16px 12px', borderTop: '1px solid var(--border)', flexShrink: 0 }}>
         <button
           onClick={() => onNavigate('profile')}
           style={{
@@ -101,10 +110,11 @@ export default function Sidebar({ activePage, onNavigate, isOpen }) {
             width: '36px', height: '36px', borderRadius: '10px',
             background: 'var(--accent-dim)', border: '1px solid rgba(232,255,71,0.3)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: 'var(--accent)', fontSize: '16px', fontWeight: '800'
-          }}>A</div>
+            color: 'var(--accent)', fontSize: '16px', fontWeight: '800',
+            textTransform: 'uppercase'
+          }}>{letter}</div>
           <div style={{ flex: 1, overflow: 'hidden' }}>
-            <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Athlete</div>
+            <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{name}</div>
             <div style={{ fontSize: '11px', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>View Profile</div>
           </div>
         </button>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { workoutPlanAPI, communityAPI } from '../utils/api';
 import { useToast } from '../hooks/useToast';
 import DeleteButton from '../components/DeleteButton';
+import { supabase } from '../utils/supabaseClient';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
@@ -70,6 +71,7 @@ export default function WorkoutPlanner() {
 
   const [communityPlans, setCommunityPlans] = useState([]);
   const [loadingCommunity, setLoadingCommunity] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState(null);
 
   const fetchPlans = async () => {
     try {
@@ -89,9 +91,24 @@ export default function WorkoutPlanner() {
   };
 
   useEffect(() => { 
+    const fetchUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) setCurrentUserId(session.user.id);
+    };
+    fetchUser();
     fetchPlans(); 
     fetchCommunityPlans();
   }, []);
+
+  const handleDeleteCommunityPlan = async (id) => {
+    try {
+      await communityAPI.delete(id);
+      showToast('Program deleted from community', 'success');
+      fetchCommunityPlans();
+    } catch (err) {
+      showToast(err || 'Failed to delete program', 'error');
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -371,7 +388,12 @@ export default function WorkoutPlanner() {
                   <div className="badge badge-accent" style={{ marginBottom: '8px' }}>{(plan.difficulty || 'Intermediate').toUpperCase()}</div>
                   <h3 style={{ margin: 0, fontSize: '18px', fontFamily: 'var(--font-display)' }}>{plan.name}</h3>
                 </div>
-                <div style={{ fontSize: '14px', color: 'var(--accent)', fontWeight: '700' }}>★ {plan.rating || '5.0'}</div>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  {plan.user_id && plan.user_id === currentUserId && (
+                    <DeleteButton onDelete={() => handleDeleteCommunityPlan(plan.id)} />
+                  )}
+                  <div style={{ fontSize: '14px', color: 'var(--accent)', fontWeight: '700' }}>★ {plan.rating || '5.0'}</div>
+                </div>
               </div>
               
               <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '20px' }}>

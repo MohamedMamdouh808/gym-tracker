@@ -87,6 +87,13 @@ export const inbodyAPI = {
 export const communityAPI = {
   share: (data) => API.post('/api/community/share', data),
   plans: () => API.get('/api/community/plans'),
+  delete: (id) => API.delete(`/api/community/${id}`),
+};
+
+export const profileAPI = {
+  get: () => API.get('/api/profile'),
+  update: (data) => API.put('/api/profile', data),
+  getStats: () => API.get('/api/profile/stats'),
 };
 
 export default API;

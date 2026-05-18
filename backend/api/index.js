@@ -68,6 +68,79 @@ const getUserId = (req) => {
   return req.headers['x-user-id'] || req.query.user_id || req.body.user_id || DEFAULT_USER_ID;
 };
 
+// ============ PROFILE ============
+app.get('/api/profile', async (req, res) => {
+  const user_id = getUserId(req);
+  const { data, error } = await getAuthenticatedSupabase(req)
+    .from('profiles')
+    .select('*')
+    .eq('id', user_id)
+    .single();
+
+  if (error && error.code !== 'PGRST116') return res.status(500).json({ error: error.message });
+  res.json({ success: true, data: data || null });
+});
+
+app.put('/api/profile', async (req, res) => {
+  const user_id = getUserId(req);
+  const updates = { ...req.body, updated_at: new Date().toISOString() };
+  
+  const { data, error } = await getAuthenticatedSupabase(req)
+    .from('profiles')
+    .upsert({ id: user_id, ...updates })
+    .select()
+    .single();
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ success: true, data });
+});
+
+app.get('/api/profile/stats', async (req, res) => {
+  const user_id = getUserId(req);
+  
+  try {
+    const { data: logs, error: logsError } = await getAuthenticatedSupabase(req)
+      .from('workout_logs')
+      .select('date, weight')
+      .eq('user_id', user_id)
+      .order('date', { ascending: false });
+
+    if (logsError) throw logsError;
+
+    const uniqueDates = [...new Set(logs.map(log => log.date))];
+    const totalWorkouts = uniqueDates.length;
+    const totalVolume = logs.reduce((sum, log) => sum + (log.weight || 0), 0);
+
+    let currentStreak = 0;
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    
+    const formattedDates = uniqueDates.map(d => new Date(d).setHours(0,0,0,0));
+    
+    let checkDate = new Date(today);
+    if (!formattedDates.includes(checkDate.getTime())) {
+      checkDate.setDate(checkDate.getDate() - 1);
+    }
+
+    while (formattedDates.includes(checkDate.getTime())) {
+      currentStreak++;
+      checkDate.setDate(checkDate.getDate() - 1);
+    }
+
+    res.json({
+      success: true,
+      data: {
+        totalWorkouts,
+        currentStreak,
+        totalVolume,
+        history: uniqueDates
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ============ HEALTH ============
 app.get('/api/health', (req, res) => {
   res.json({ 
@@ -360,6 +433,20 @@ app.get('/api/community/plans', async (req, res) => {
   res.json({ success: true, data: data || [] });
 });
 
+app.delete('/api/community/:id', async (req, res) => {
+  const user_id = getUserId(req);
+  const { id } = req.params;
+
+  const { error } = await getAuthenticatedSupabase(req)
+    .from('community_programs')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', user_id);
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ success: true, message: 'Program removed from community' });
+});
+
 // ============ WORKOUT LOGS ============
 app.post('/api/workout-log', async (req, res) => {
   const { date, exercise, sets = 3, reps = 10, weight = 0, completed = 1 } = req.body;
@@ -626,49 +713,58 @@ app.post('/api/ai/coach', async (req, res) => {
   }
 
   try {
-    // Fetch user context if not provided
+    const authSupabase = getAuthenticatedSupabase(req);
+    
+    // Fetch user context
     let userStats = context;
     if (!userStats) {
-      const authSupabase = getAuthenticatedSupabase(req);
-      const { data: weights } = await authSupabase.from('weight_logs').select('*').eq('user_id', user_id).order('date', { ascending: false }).limit(5);
-      const { data: meals } = await authSupabase.from('meals').select('*').eq('user_id', user_id).order('date', { ascending: false }).limit(10);
-      userStats = { weights, meals };
+      const [weights, meals, workouts, prs, plan] = await Promise.all([
+        authSupabase.from('weight_logs').select('*').eq('user_id', user_id).order('date', { ascending: false }).limit(10),
+        authSupabase.from('meals').select('*').eq('user_id', user_id).order('date', { ascending: false }).limit(20),
+        authSupabase.from('workout_logs').select('*').eq('user_id', user_id).order('date', { ascending: false }).limit(30),
+        authSupabase.from('personal_records').select('*').eq('user_id', user_id).order('weight', { ascending: false }),
+        authSupabase.from('workout_plans').select('*').eq('user_id', user_id)
+      ]);
+
+      userStats = { 
+        weights: weights.data || [], 
+        meals: meals.data || [],
+        workouts: workouts.data || [],
+        personal_records: prs.data || [],
+        current_plan: plan.data || []
+      };
     }
 
     // Fetch last 10 InBody scans for trend analysis
-    const authSupabase2 = getAuthenticatedSupabase(req);
-    const { data: recentScans } = await authSupabase2
+    const { data: recentScans } = await authSupabase
       .from('inbody_scans')
       .select('*')
       .eq('user_id', user_id)
       .order('date', { ascending: false })
       .limit(10);
 
-    const inbodyContext = recentScans?.length ? `
-InBody Scan History (Trend Analysis):
-` : 'No InBody scan history available.';
+    const latestScan = recentScans?.[0] || null;
+    const inbodyContext = recentScans?.length 
+      ? `InBody Scan History (Trend Analysis):\n${JSON.stringify(recentScans, null, 2)}` 
+      : 'No InBody scan history available.';
 
-    const systemPrompt = `You are a professional fitness and nutrition coach with access to detailed body composition data.
+    const systemPrompt = `You are "GymTracker Pro AI Coach", an elite fitness and nutrition expert.
     
-InBody Body Composition Analysis:
+Body Composition (InBody):
 ${inbodyContext}
 
-Recent Training & Nutrition Data:
-${JSON.stringify(userStats)}
+Comprehensive User History:
+${JSON.stringify(userStats, null, 2)}
 
 Instructions:
-- Use the InBody data to give highly personalized advice
-- Reference specific numbers (e.g., "Your BMR is ${latestScan?.bmr || '?'} kcal, so your TDEE is...")
-- If visceral fat is high (>10), flag it as a health priority
-- Recommend nutrition targets based on actual lean body mass, not generic formulas
-- Format responses in clean markdown with clear sections.`;
+1. DATA-DRIVEN COACHING: Use the InBody metrics, workout logs, and PRs to give precise advice.
+2. NUTRITION: Calculate TDEE/Macros based on Lean Body Mass if InBody data exists.
+3. TRAINING: If they have a plan but their logs show they are missing days, point it out. 
+4. PROGRESS: Reference PRs and weight trends (e.g., "Great job on that ${userStats.personal_records?.[0]?.exercise || 'lift'}!").
+5. INBODY SPECS: Reference specific numbers like BMR: ${latestScan?.bmr || 'unknown'} kcal, Body Fat: ${latestScan?.body_fat_percent || 'unknown'}%.
+6. FORMAT: Use professional markdown, bold key takeaways, and bullet points.
 
-    const generationConfig = {
-      temperature: 0.7,
-      topK: 40,
-      topP: 0.95,
-      maxOutputTokens: 1024,
-    };
+Respond as a supportive but firm coach who values scientific accuracy and consistency.`;
 
     // Use Groq as primary if available
     if (process.env.GROQ_API_KEY) {
@@ -689,7 +785,6 @@ Instructions:
         }
       } catch (groqErr) {
         console.error('Groq Error:', groqErr.message);
-        // Fall through to Gemini if Groq fails
       }
     }
 

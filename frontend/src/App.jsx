@@ -10,6 +10,7 @@ import AICoach from './pages/AICoach';
 import Profile from './pages/Profile';
 import Login from './pages/Login';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ProfileProvider } from './context/ProfileContext';
 
 import HealthCalculators from './pages/HealthCalculators';
 import InBodyScan from './pages/InBodyScan';
@@ -94,7 +95,9 @@ function AppContent() {
 export default function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <ProfileProvider>
+        <AppContent />
+      </ProfileProvider>
     </AuthProvider>
   );
 }

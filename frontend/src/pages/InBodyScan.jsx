@@ -2,52 +2,57 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useToast } from '../hooks/useToast';
 import { inbodyAPI } from '../utils/api';
 import DeleteButton from '../components/DeleteButton';
+import { 
+  Scale, BicepsFlexed, Zap, Droplet, Activity, Timer, 
+  Flame, Beef, TrendingUp, Ruler, Calendar, User,
+  Search, CheckCircle, FileText, Camera, Loader2, Pencil
+} from 'lucide-react';
 
 const METRIC_GROUPS = [
   {
     title: 'BODY COMPOSITION',
     color: 'var(--accent)',
     metrics: [
-      { key: 'weight', label: 'Weight', unit: 'kg', icon: '◈' },
-      { key: 'lean_body_mass', label: 'Lean Body Mass', unit: 'kg', icon: '💪' },
-      { key: 'body_fat_mass', label: 'Body Fat Mass', unit: 'kg', icon: '⊕' },
-      { key: 'skeletal_muscle_mass', label: 'Skeletal Muscle', unit: 'kg', icon: '⚡' },
-      { key: 'total_body_water', label: 'Total Body Water', unit: 'L', icon: '💧' },
+      { key: 'weight', label: 'Weight', unit: 'kg', icon: Scale },
+      { key: 'lean_body_mass', label: 'Lean Body Mass', unit: 'kg', icon: BicepsFlexed },
+      { key: 'body_fat_mass', label: 'Body Fat Mass', unit: 'kg', icon: Activity },
+      { key: 'skeletal_muscle_mass', label: 'Skeletal Muscle', unit: 'kg', icon: Zap },
+      { key: 'total_body_water', label: 'Total Body Water', unit: 'L', icon: Droplet },
     ]
   },
   {
     title: 'BODY INDEXES',
     color: '#2ed5ff',
     metrics: [
-      { key: 'bmi', label: 'BMI', unit: '', icon: '⬡' },
-      { key: 'body_fat_percent', label: 'Body Fat %', unit: '%', icon: '%' },
-      { key: 'visceral_fat_level', label: 'Visceral Fat Level', unit: '', icon: '◉' },
-      { key: 'metabolic_age', label: 'Metabolic Age', unit: 'yrs', icon: '⏱' },
+      { key: 'bmi', label: 'BMI', unit: '', icon: TrendingUp },
+      { key: 'body_fat_percent', label: 'Body Fat %', unit: '%', icon: Activity },
+      { key: 'visceral_fat_level', label: 'Visceral Fat Level', unit: '', icon: Flame },
+      { key: 'metabolic_age', label: 'Metabolic Age', unit: 'yrs', icon: Timer },
     ]
   },
   {
     title: 'ENERGY & NUTRITION',
     color: '#ff9f43',
     metrics: [
-      { key: 'bmr', label: 'Basal Metabolic Rate', unit: 'kcal', icon: '🔥' },
-      { key: 'protein', label: 'Protein Mass', unit: 'kg', icon: '🥩' },
-      { key: 'minerals', label: 'Minerals', unit: 'kg', icon: '⬢' },
+      { key: 'bmr', label: 'Basal Metabolic Rate', unit: 'kcal', icon: Flame },
+      { key: 'protein', label: 'Protein Mass', unit: 'kg', icon: Beef },
+      { key: 'minerals', label: 'Minerals', unit: 'kg', icon: Activity },
     ]
   },
   {
     title: 'SEGMENT ANALYSIS',
     color: 'var(--green)',
     metrics: [
-      { key: 'right_arm_muscle', label: 'R. Arm Muscle', unit: 'kg', icon: '◑' },
-      { key: 'left_arm_muscle', label: 'L. Arm Muscle', unit: 'kg', icon: '◐' },
-      { key: 'trunk_muscle', label: 'Trunk Muscle', unit: 'kg', icon: '▣' },
-      { key: 'right_leg_muscle', label: 'R. Leg Muscle', unit: 'kg', icon: '◗' },
-      { key: 'left_leg_muscle', label: 'L. Leg Muscle', unit: 'kg', icon: '◖' },
+      { key: 'right_arm_muscle', label: 'R. Arm Muscle', unit: 'kg', icon: BicepsFlexed },
+      { key: 'left_arm_muscle', label: 'L. Arm Muscle', unit: 'kg', icon: BicepsFlexed },
+      { key: 'trunk_muscle', label: 'Trunk Muscle', unit: 'kg', icon: BicepsFlexed },
+      { key: 'right_leg_muscle', label: 'R. Leg Muscle', unit: 'kg', icon: BicepsFlexed },
+      { key: 'left_leg_muscle', label: 'L. Leg Muscle', unit: 'kg', icon: BicepsFlexed },
     ]
   },
 ];
 
-function MetricCard({ label, value, unit, icon, color }) {
+function MetricCard({ label, value, unit, icon: Icon, color }) {
   if (value === null || value === undefined) return null;
   return (
     <div style={{
@@ -68,7 +73,7 @@ function MetricCard({ label, value, unit, icon, color }) {
         background: `${color}18`, color,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         fontSize: '16px', fontWeight: '700', flexShrink: 0
-      }}>{icon}</div>
+      }}><Icon size={18} /></div>
       <div style={{ flex: 1 }}>
         <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '2px' }}>{label}</div>
         <div style={{ fontFamily: 'var(--font-display)', fontSize: '20px', color, lineHeight: 1 }}>
@@ -86,7 +91,6 @@ function HistoryRow({ scan, onExpand, expanded, onDelete, onUpdate }) {
   const handleSave = (e) => {
     e.stopPropagation();
     const payload = { ...editForm };
-    // Convert numerical strings to numbers
     Object.keys(payload).forEach(key => {
       if (key !== 'date' && key !== 'gender' && key !== 'id' && key !== 'user_id' && key !== 'segment_data' && payload[key] !== null) {
         payload[key] = parseFloat(payload[key]);
@@ -102,29 +106,70 @@ function HistoryRow({ scan, onExpand, expanded, onDelete, onUpdate }) {
     setEditForm({ ...scan });
   };
 
+  const allMetrics = [
+    { key: 'weight', label: 'Weight', unit: 'kg' },
+    { key: 'lean_body_mass', label: 'Lean Body Mass', unit: 'kg' },
+    { key: 'body_fat_mass', label: 'Body Fat Mass', unit: 'kg' },
+    { key: 'skeletal_muscle_mass', label: 'Skeletal Muscle', unit: 'kg' },
+    { key: 'total_body_water', label: 'Total Body Water', unit: 'L' },
+    { key: 'bmi', label: 'BMI', unit: '' },
+    { key: 'body_fat_percent', label: 'Body Fat %', unit: '%' },
+    { key: 'visceral_fat_level', label: 'Visceral Fat', unit: '' },
+    { key: 'metabolic_age', label: 'Metabolic Age', unit: 'yrs' },
+    { key: 'bmr', label: 'BMR', unit: 'kcal' },
+    { key: 'protein', label: 'Protein', unit: 'kg' },
+    { key: 'minerals', label: 'Minerals', unit: 'kg' },
+    { key: 'height', label: 'Height', unit: 'cm' },
+    { key: 'age', label: 'Age', unit: 'yrs' },
+  ];
+
+  const segmentMuscleMetrics = [
+    { key: 'right_arm_muscle', label: 'R. Arm Muscle', unit: 'kg' },
+    { key: 'left_arm_muscle', label: 'L. Arm Muscle', unit: 'kg' },
+    { key: 'trunk_muscle', label: 'Trunk Muscle', unit: 'kg' },
+    { key: 'right_leg_muscle', label: 'R. Leg Muscle', unit: 'kg' },
+    { key: 'left_leg_muscle', label: 'L. Leg Muscle', unit: 'kg' },
+  ];
+
+  const segmentFatMetrics = [
+    { key: 'right_arm_fat', label: 'R. Arm Fat', unit: 'kg' },
+    { key: 'left_arm_fat', label: 'L. Arm Fat', unit: 'kg' },
+    { key: 'trunk_fat', label: 'Trunk Fat', unit: 'kg' },
+    { key: 'right_leg_fat', label: 'R. Leg Fat', unit: 'kg' },
+    { key: 'left_leg_fat', label: 'L. Leg Fat', unit: 'kg' },
+  ];
+
+  const getValue = (key) => isEditing ? editForm[key] : scan[key];
+  const getSegmentValue = (key) => {
+    if (isEditing) return editForm.segment_data?.[key];
+    return scan.segment_data?.[key];
+  };
+
   return (
     <div style={{
-      borderRadius: 'var(--radius-sm)',
-      border: `1px solid ${expanded ? 'rgba(232,255,71,0.3)' : 'var(--border)'}`,
-      background: expanded ? 'var(--bg-elevated)' : 'transparent',
+      borderRadius: 'var(--radius-md)',
+      border: `1px solid ${expanded ? 'rgba(232,255,71,0.4)' : 'var(--border)'}`,
+      background: 'var(--bg-card)',
       overflow: 'hidden',
-      transition: 'all 0.2s',
-      marginBottom: '8px',
+      transition: 'all 0.25s',
+      marginBottom: '12px',
     }}>
       <div
         style={{
-          width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '12px 16px', background: 'transparent',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '16px 20px', cursor: 'pointer',
+          background: expanded ? 'var(--bg-elevated)' : 'transparent',
         }}
+        onClick={onExpand}
       >
-        <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap', flex: 1, cursor: 'pointer' }} onClick={onExpand}>
+        <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
           {isEditing ? (
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }} onClick={e => e.stopPropagation()}>
               <input 
                 type="date" 
                 value={editForm.date} 
                 onChange={e => setEditForm(prev => ({ ...prev, date: e.target.value }))} 
-                style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'white', padding: '4px 8px', borderRadius: '4px', fontSize: '12px' }}
+                style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'white', padding: '6px 10px', borderRadius: '6px', fontSize: '13px' }}
               />
               <div style={{ position: 'relative' }}>
                 <input 
@@ -132,94 +177,204 @@ function HistoryRow({ scan, onExpand, expanded, onDelete, onUpdate }) {
                   value={editForm.weight} 
                   onChange={e => setEditForm(prev => ({ ...prev, weight: e.target.value }))} 
                   placeholder="Weight"
-                  style={{ width: '80px', background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'white', padding: '4px 8px', borderRadius: '4px', fontSize: '12px' }}
+                  style={{ width: '90px', background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'white', padding: '6px 10px 6px 30px', borderRadius: '6px', fontSize: '13px' }}
                 />
-                <span style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', fontSize: '10px', color: 'var(--text-muted)' }}>kg</span>
+                <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', fontSize: '11px', color: 'var(--text-muted)' }}>kg</span>
               </div>
             </div>
           ) : (
             <>
-              <span style={{ fontSize: '12px', fontWeight: '700', color: 'var(--accent)', fontFamily: 'var(--font-display)' }}>{scan.date}</span>
-              {scan.weight !== null && <span style={{ fontSize: '13px', fontWeight: '500' }}>⚖️ {scan.weight} kg</span>}
-              {scan.body_fat_percent !== null && <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>🔥 {scan.body_fat_percent}% fat</span>}
-              {scan.skeletal_muscle_mass !== null && <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>💪 {scan.skeletal_muscle_mass} kg muscle</span>}
+              <span style={{ fontSize: '14px', fontWeight: '700', color: 'var(--accent)', fontFamily: 'var(--font-display)', letterSpacing: '0.04em' }}>{scan.date}</span>
+              {scan.weight !== null && <span style={{ fontSize: '13px', fontWeight: '600' }}><Scale size={14} /> {scan.weight} kg</span>}
+              {scan.body_fat_percent !== null && <span style={{ fontSize: '13px', color: '#ff9f43' }}><Flame size={14} /> {scan.body_fat_percent}%</span>}
+              {scan.skeletal_muscle_mass !== null && <span style={{ fontSize: '13px', color: 'var(--green)' }}><BicepsFlexed size={14} /> {scan.skeletal_muscle_mass} kg</span>}
+              {scan.bmi !== null && <span style={{ fontSize: '13px', color: '#2ed5ff' }}><TrendingUp size={14} /> {scan.bmi}</span>}
+              {scan.bmr !== null && <span style={{ fontSize: '13px', color: '#ff6b81' }}><Flame size={14} /> {scan.bmr} kcal</span>}
             </>
           )}
         </div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           {isEditing ? (
             <>
-              <button onClick={handleSave} className="btn-accent" style={{ padding: '4px 10px', fontSize: '11px', height: '28px' }}>SAVE</button>
-              <button onClick={handleCancel} className="btn-ghost" style={{ padding: '4px 10px', fontSize: '11px', height: '28px' }}>CANCEL</button>
+              <button onClick={handleSave} className="btn-accent" style={{ padding: '6px 14px', fontSize: '12px', height: '32px' }}>SAVE</button>
+              <button onClick={handleCancel} className="btn-ghost" style={{ padding: '6px 14px', fontSize: '12px', height: '32px' }}>CANCEL</button>
             </>
           ) : (
             <>
               <button 
                 onClick={(e) => { e.stopPropagation(); setIsEditing(true); }} 
-                style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '14px', padding: '4px' }}
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '16px', padding: '4px' }}
                 title="Edit scan"
-              >✏️</button>
+              ><Pencil size={16} /></button>
               <DeleteButton onDelete={() => onDelete(scan.id)} />
-              <button 
-                onClick={onExpand} 
-                style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '12px', cursor: 'pointer', marginLeft: '4px', padding: '4px' }}
-              >
+              <span style={{ 
+                width: '32px', height: '32px', borderRadius: '50%',
+                background: expanded ? 'var(--accent)' : 'var(--bg-elevated)',
+                color: expanded ? '#000' : 'var(--text-muted)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '12px', transition: 'all 0.2s',
+                border: '1px solid var(--border)'
+              }}>
                 {expanded ? '▲' : '▼'}
-              </button>
+              </span>
             </>
           )}
         </div>
       </div>
       {expanded && (
-        <div style={{ padding: '0 16px 16px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '8px' }}>
-          {[
-            { label: 'Weight', key: 'weight', unit: 'kg' },
-            { label: 'Body Fat %', key: 'body_fat_percent', unit: '%' },
-            { label: 'Muscle Mass', key: 'skeletal_muscle_mass', unit: 'kg' },
-            { label: 'Lean Mass', key: 'lean_body_mass', unit: 'kg' },
-            { label: 'BMI', key: 'bmi', unit: '' },
-            { label: 'BMR', key: 'bmr', unit: 'kcal' },
-            { label: 'Visceral Fat', key: 'visceral_fat_level', unit: 'Lvl' },
-            { label: 'Metabolic Age', key: 'metabolic_age', unit: 'yrs' },
-            { label: 'Protein', key: 'protein', unit: 'kg' },
-            { label: 'Minerals', key: 'minerals', unit: 'kg' },
-            { label: 'Body Water', key: 'total_body_water', unit: 'L' },
-            
-            // Segment Muscle
-            { label: 'R. Arm Muscle', key: 'right_arm_muscle', unit: 'kg' },
-            { label: 'L. Arm Muscle', key: 'left_arm_muscle', unit: 'kg' },
-            { label: 'Trunk Muscle', key: 'trunk_muscle', unit: 'kg' },
-            { label: 'R. Leg Muscle', key: 'right_leg_muscle', unit: 'kg' },
-            { label: 'L. Leg Muscle', key: 'left_leg_muscle', unit: 'kg' },
-
-            // Personal
-            { label: 'Height', key: 'height', unit: 'cm' },
-            { label: 'Age', key: 'age', unit: 'yrs' },
-          ].map(({ label, key, unit }) => {
-            const val = isEditing ? editForm[key] : scan[key];
-            if (!isEditing && (val === null || val === undefined || String(val) === 'null')) return null;
-            return (
-              <div key={label} style={{ padding: '8px 12px', background: 'var(--bg-card)', borderRadius: '6px', border: '1px solid var(--border)' }}>
-                <div style={{ fontSize: '9px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</div>
-                {isEditing ? (
-                  <div style={{ position: 'relative', marginTop: '4px' }}>
-                    <input 
-                      type="number" 
-                      step="0.1"
-                      value={val || ''} 
-                      onChange={e => setEditForm(prev => ({ ...prev, [key]: e.target.value }))}
-                      style={{ width: '100%', background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'white', padding: '4px 8px', borderRadius: '4px', fontSize: '13px' }}
-                    />
-                    <span style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', fontSize: '10px', color: 'var(--text-muted)' }}>{unit}</span>
+        <div style={{ padding: '0 20px 20px', borderTop: '1px solid var(--border)' }}>
+          {isEditing && (
+            <div style={{ margin: '16px 0 0', padding: '12px 16px', background: 'var(--accent-dim)', borderRadius: 'var(--radius-sm)', marginBottom: '16px', fontSize: '12px' }}>
+              Click on any value below to edit · Press SAVE when done
+            </div>
+          )}
+          
+          {/* BODY COMPOSITION */}
+          <div style={{ marginTop: '16px' }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: '11px', letterSpacing: '0.1em', color: 'var(--accent)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ width: '3px', height: '12px', background: 'var(--accent)', borderRadius: '2px' }}></span>
+              BODY COMPOSITION
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '8px' }}>
+              {allMetrics.filter(m => m.key !== 'height' && m.key !== 'age').map(({ key, label, unit }) => {
+                const val = getValue(key);
+                if (!isEditing && (val === null || val === undefined || String(val) === 'null')) return null;
+                return (
+                  <div key={key} style={{ padding: '12px', background: 'var(--bg-elevated)', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                    <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>{label}</div>
+                    {isEditing ? (
+                      <div style={{ position: 'relative' }}>
+                        <input 
+                          type="number" 
+                          step="0.1"
+                          value={val || ''} 
+                          onChange={e => setEditForm(prev => ({ ...prev, [key]: e.target.value }))}
+                          style={{ width: '100%', background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'white', padding: '6px 8px', borderRadius: '4px', fontSize: '14px' }}
+                        />
+                        {unit && <span style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', fontSize: '10px', color: 'var(--text-muted)' }}>{unit}</span>}
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: '18px', fontWeight: '700', color: 'var(--accent)', fontFamily: 'var(--font-display)' }}>
+                        {val} <span style={{ fontSize: '11px', fontWeight: '400', color: 'var(--text-muted)' }}>{unit}</span>
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  <div style={{ fontSize: '14px', fontWeight: '700', color: 'var(--accent)', marginTop: '2px' }}>
-                    {val} <span style={{ fontSize: '10px', fontWeight: '400', color: 'var(--text-muted)' }}>{unit}</span>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* SEGMENT MUSCLE ANALYSIS */}
+          <div style={{ marginTop: '16px' }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: '11px', letterSpacing: '0.1em', color: 'var(--green)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ width: '3px', height: '12px', background: 'var(--green)', borderRadius: '2px' }}></span>
+              SEGMENT MUSCLE ANALYSIS
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '8px' }}>
+              {segmentMuscleMetrics.map(({ key, label, unit }) => {
+                const val = getSegmentValue(key);
+                if (!isEditing && (val === null || val === undefined || String(val) === 'null')) return null;
+                return (
+                  <div key={key} style={{ padding: '12px', background: 'var(--bg-elevated)', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                    <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>{label}</div>
+                    {isEditing ? (
+                      <input 
+                        type="number" 
+                        step="0.1"
+                        value={val || ''} 
+                        onChange={e => setEditForm(prev => ({ ...prev, segment_data: { ...prev.segment_data, [key]: e.target.value } }))}
+                        style={{ width: '100%', background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'white', padding: '6px 8px', borderRadius: '4px', fontSize: '14px' }}
+                      />
+                    ) : (
+                      <div style={{ fontSize: '18px', fontWeight: '700', color: 'var(--green)', fontFamily: 'var(--font-display)' }}>
+                        {val} <span style={{ fontSize: '11px', fontWeight: '400', color: 'var(--text-muted)' }}>{unit}</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* SEGMENT FAT ANALYSIS */}
+          <div style={{ marginTop: '16px' }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: '11px', letterSpacing: '0.1em', color: '#ff9f43', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ width: '3px', height: '12px', background: '#ff9f43', borderRadius: '2px' }}></span>
+              SEGMENT FAT ANALYSIS
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '8px' }}>
+              {segmentFatMetrics.map(({ key, label, unit }) => {
+                const val = getSegmentValue(key);
+                if (!isEditing && (val === null || val === undefined || String(val) === 'null')) return null;
+                return (
+                  <div key={key} style={{ padding: '12px', background: 'var(--bg-elevated)', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                    <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>{label}</div>
+                    {isEditing ? (
+                      <input 
+                        type="number" 
+                        step="0.1"
+                        value={val || ''} 
+                        onChange={e => setEditForm(prev => ({ ...prev, segment_data: { ...prev.segment_data, [key]: e.target.value } }))}
+                        style={{ width: '100%', background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'white', padding: '6px 8px', borderRadius: '4px', fontSize: '14px' }}
+                      />
+                    ) : (
+                      <div style={{ fontSize: '18px', fontWeight: '700', color: '#ff9f43', fontFamily: 'var(--font-display)' }}>
+                        {val} <span style={{ fontSize: '11px', fontWeight: '400', color: 'var(--text-muted)' }}>{unit}</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* PERSONAL INFO */}
+          {(getValue('height') || getValue('age') || getValue('gender')) && (
+            <div style={{ marginTop: '16px' }}>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: '11px', letterSpacing: '0.1em', color: '#2ed5ff', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ width: '3px', height: '12px', background: '#2ed5ff', borderRadius: '2px' }}></span>
+                PERSONAL INFO
+              </div>
+              <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                {getValue('height') && (
+                  <div style={{ padding: '12px 16px', background: 'var(--bg-elevated)', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                    <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>Height</div>
+                    {isEditing ? (
+                      <input 
+                        type="number" 
+                        value={getValue('height') || ''} 
+                        onChange={e => setEditForm(prev => ({ ...prev, height: e.target.value }))}
+                        style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'white', padding: '4px 8px', borderRadius: '4px', fontSize: '14px' }}
+                      />
+                    ) : (
+                      <div style={{ fontSize: '18px', fontWeight: '700', color: '#2ed5ff', fontFamily: 'var(--font-display)' }}>{getValue('height')} <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>cm</span></div>
+                    )}
+                  </div>
+                )}
+                {getValue('age') && (
+                  <div style={{ padding: '12px 16px', background: 'var(--bg-elevated)', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                    <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>Age</div>
+                    {isEditing ? (
+                      <input 
+                        type="number" 
+                        value={getValue('age') || ''} 
+                        onChange={e => setEditForm(prev => ({ ...prev, age: e.target.value }))}
+                        style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'white', padding: '4px 8px', borderRadius: '4px', fontSize: '14px' }}
+                      />
+                    ) : (
+                      <div style={{ fontSize: '18px', fontWeight: '700', color: '#2ed5ff', fontFamily: 'var(--font-display)' }}>{getValue('age')} <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>yrs</span></div>
+                    )}
+                  </div>
+                )}
+                {getValue('gender') && (
+                  <div style={{ padding: '12px 16px', background: 'var(--bg-elevated)', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                    <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>Gender</div>
+                    <div style={{ fontSize: '18px', fontWeight: '700', color: '#2ed5ff', fontFamily: 'var(--font-display)', textTransform: 'capitalize' }}>{getValue('gender')}</div>
                   </div>
                 )}
               </div>
-            );
-          })}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -337,7 +492,7 @@ export default function InBodyScan() {
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: '4px', marginBottom: '24px', background: 'var(--bg-elevated)', padding: '4px', borderRadius: 'var(--radius-md)', width: 'fit-content', border: '1px solid var(--border)' }}>
-        {[{ id: 'scan', label: '📷 New Scan' }, { id: 'history', label: '📋 History' }].map(tab => (
+        {[{ id: 'scan', label: 'New Scan', Icon: Camera }, { id: 'history', label: 'History', Icon: FileText }].map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
@@ -348,8 +503,9 @@ export default function InBodyScan() {
               fontWeight: activeTab === tab.id ? '700' : '400',
               cursor: 'pointer', fontSize: '13px', transition: 'all 0.2s',
               fontFamily: 'var(--font-body)',
+              display: 'flex', alignItems: 'center', gap: '6px'
             }}
-          >{tab.label}</button>
+          >{tab.Icon && <tab.Icon size={14} />}{tab.label}</button>
         ))}
       </div>
 
@@ -385,7 +541,7 @@ export default function InBodyScan() {
                   gap: '12px',
                 }}
               >
-                <div style={{ fontSize: '48px', opacity: dragOver ? 1 : 0.5 }}>📷</div>
+                <div style={{ opacity: dragOver ? 1 : 0.5 }}><Camera size={48} /></div>
                 <div style={{ fontSize: '14px', color: dragOver ? 'var(--accent)' : 'var(--text-muted)', fontWeight: '600' }}>
                   {dragOver ? 'Drop your InBody scan here' : 'Drag & drop or click to upload'}
                 </div>
@@ -422,10 +578,10 @@ export default function InBodyScan() {
                 >
                   {scanning ? (
                     <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                      <span style={{ animation: 'spin 1s linear infinite', display: 'inline-block' }}>⟳</span>
+                      <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
                       AI SCANNING...
                     </span>
-                  ) : '🔍 ANALYZE WITH AI'}
+                  ) : <><Search size={16} /> ANALYZE WITH AI</>}
                 </button>
                 {scanning && (
                   <div style={{ marginTop: '12px', fontSize: '11px', color: 'var(--text-muted)', textAlign: 'center' }}>
@@ -457,7 +613,7 @@ export default function InBodyScan() {
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
                   <div>
                     <div style={{ fontFamily: 'var(--font-display)', fontSize: '20px', color: 'var(--accent)' }}>
-                      ✅ {metricCount} Metrics Extracted
+                      <CheckCircle size={20} style={{ marginRight: '8px' }} />{metricCount} Metrics Extracted
                     </div>
                     <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
                       Full scan saved to history · Data distributed to all pages
@@ -470,7 +626,8 @@ export default function InBodyScan() {
                 <div style={{ marginTop: '16px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '10px' }}>
                   {[
                     {
-                      page: '⚖️ Weight Tracker',
+                      page: 'Weight Tracker',
+                      Icon: Scale,
                       items: [
                         extracted.weight ? `Weight: ${extracted.weight} kg ✓` : null,
                         extracted.body_fat_percent ? `Body Fat: ${extracted.body_fat_percent}% ✓` : null,
@@ -478,7 +635,8 @@ export default function InBodyScan() {
                       saved: result.weightLogged,
                     },
                     {
-                      page: '⚡ Calculators',
+                      page: 'Calculators',
+                      Icon: Activity,
                       items: [
                         extracted.height ? `Height: ${extracted.height} cm ✓` : null,
                         extracted.age ? `Age: ${extracted.age} ✓` : null,
@@ -488,7 +646,7 @@ export default function InBodyScan() {
                       saved: !!(extracted.height || extracted.bmr),
                     },
                     {
-                      page: '✨ AI Coach',
+                      page: 'AI Coach',
                       items: [
                         'Body composition ✓',
                         'BMR & metabolism ✓',
@@ -502,7 +660,8 @@ export default function InBodyScan() {
                       background: route.saved ? 'rgba(0,0,0,0.3)' : 'rgba(255,71,87,0.08)',
                       border: `1px solid ${route.saved ? 'rgba(232,255,71,0.15)' : 'rgba(255,71,87,0.2)'}`,
                     }}>
-                      <div style={{ fontSize: '11px', fontWeight: '700', marginBottom: '6px', color: route.saved ? 'var(--accent)' : '#ff4757' }}>
+                      <div style={{ fontSize: '11px', fontWeight: '700', marginBottom: '6px', color: route.saved ? 'var(--accent)' : '#ff4757', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        {route.Icon && <route.Icon size={14} />}
                         {route.page}
                       </div>
                       {route.items.length > 0 ? route.items.map(item => (
@@ -542,10 +701,10 @@ export default function InBodyScan() {
                 <div className="card" style={{ marginBottom: '16px' }}>
                   <div style={{ fontFamily: 'var(--font-display)', fontSize: '13px', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: '14px' }}>PERSONAL INFO</div>
                   <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-                    {extracted.height && <div style={{ fontSize: '14px' }}>📏 Height: <strong>{extracted.height} cm</strong></div>}
-                    {extracted.age && <div style={{ fontSize: '14px' }}>🎂 Age: <strong>{extracted.age} yrs</strong></div>}
-                    {extracted.gender && <div style={{ fontSize: '14px' }}>👤 Gender: <strong style={{ textTransform: 'capitalize' }}>{extracted.gender}</strong></div>}
-                    {extracted.date && <div style={{ fontSize: '14px' }}>📅 Scan Date: <strong>{extracted.date}</strong></div>}
+                    {extracted.height && <div style={{ fontSize: '14px' }}><Ruler size={14} /> Height: <strong>{extracted.height} cm</strong></div>}
+                    {extracted.age && <div style={{ fontSize: '14px' }}><Timer size={14} /> Age: <strong>{extracted.age} yrs</strong></div>}
+                    {extracted.gender && <div style={{ fontSize: '14px' }}><User size={14} /> Gender: <strong style={{ textTransform: 'capitalize' }}>{extracted.gender}</strong></div>}
+                    {extracted.date && <div style={{ fontSize: '14px' }}><Calendar size={14} /> Scan Date: <strong>{extracted.date}</strong></div>}
                   </div>
                 </div>
               )}
@@ -566,7 +725,7 @@ export default function InBodyScan() {
             <div className="skeleton" style={{ height: '200px' }} />
           ) : history.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-muted)' }}>
-              <div style={{ fontSize: '40px', marginBottom: '12px', opacity: 0.4 }}>📋</div>
+              <div style={{ marginBottom: '12px', opacity: 0.4 }}><FileText size={40} /></div>
               <div style={{ fontWeight: '600', marginBottom: '6px' }}>No scans yet</div>
               <div style={{ fontSize: '12px' }}>Upload your first InBody scan to see history here</div>
             </div>

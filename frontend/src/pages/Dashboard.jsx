@@ -5,6 +5,11 @@ import {
   LineElement, BarElement, Title, Tooltip, Legend, Filler
 } from 'chart.js';
 import { dashboardAPI, waterAPI } from '../utils/api';
+import { 
+  RefreshCw, Scale, Flame, Droplets, Trophy, 
+  Zap, Salad, Dumbbell, Calendar, Target, Award,
+  CheckCircle2
+} from 'lucide-react';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler);
 
@@ -32,16 +37,11 @@ export default function Dashboard({ onNavigate }) {
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  useEffect(() => { fetchData(); }, []);
 
   const handleSync = () => {
     setIsSyncing(true);
-    setTimeout(() => {
-      setIsSyncing(false);
-      fetchData();
-    }, 1500);
+    setTimeout(() => { setIsSyncing(false); fetchData(); }, 1500);
   };
 
   const handleWaterLog = async (e) => {
@@ -93,10 +93,6 @@ export default function Dashboard({ onNavigate }) {
     }],
   };
 
-  const latestWeight = data?.latestWeight?.weight || '—';
-  const calToday = Math.round(data?.caloriesToday || 0);
-  const workoutsWeek = data?.weekWorkouts || 0;
-  const workoutsToday = data?.todayWorkoutCount || 0;
   const waterToday = data?.waterToday || 0;
 
   const macroChartData = {
@@ -111,7 +107,6 @@ export default function Dashboard({ onNavigate }) {
 
   return (
     <div className="page-enter">
-      {/* Header */}
       <div style={{ marginBottom: '28px' }}>
         <div className="flex items-center justify-between">
           <div>
@@ -119,25 +114,27 @@ export default function Dashboard({ onNavigate }) {
             <p className="section-subtitle">{today}</p>
           </div>
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-            <button onClick={handleSync} className={`btn btn-ghost ${isSyncing ? 'pulse' : ''}`} style={{ fontSize: '11px', gap: '8px' }}>
-              {isSyncing ? 'SYNCING...' : '↻ SYNC HEALTH'}
+            <button onClick={handleSync} className={`btn btn-ghost ${isSyncing ? 'pulse' : ''}`} style={{ fontSize: '11px', gap: '8px', display: 'flex', alignItems: 'center' }}>
+              <RefreshCw size={14} style={{ animation: isSyncing ? 'spin 1s linear infinite' : 'none' }} />
+              {isSyncing ? 'SYNCING...' : 'SYNC HEALTH'}
             </button>
-            <span className="badge badge-green">● PRO ACCOUNT</span>
+            <span className="badge badge-green" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#2ed5ff' }} />
+              PRO ACCOUNT
+            </span>
           </div>
         </div>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
         <div className="main-content-inner">
-          {/* Top Row: Stats */}
           <div className="grid-3" style={{ marginBottom: '24px' }}>
-            <StatCard label="Body Mass" value={data?.latestWeight?.weight || '--'} unit="kg" color="var(--accent)" icon="◈" change="Trend: Stable" />
-            <StatCard label="Energy Balance" value={Math.round(data?.caloriesToday || 0)} unit="kcal" color="var(--orange)" icon="◉" change={`${Math.round(data?.caloriesToday / 2500 * 100)}% of goal`} />
-            <StatCard label="Hydration" value={waterToday} unit="ml" color="#2ed5ff" icon="≈" change={`${Math.round(waterToday / 2500 * 100)}% of goal`} />
+            <StatCard label="Body Mass" value={data?.latestWeight?.weight || '--'} unit="kg" color="var(--accent)" icon={Scale} change="Trend: Stable" />
+            <StatCard label="Energy Balance" value={Math.round(data?.caloriesToday || 0)} unit="kcal" color="var(--orange)" icon={Flame} change={`${Math.round((data?.caloriesToday || 0) / 2500 * 100)}% of goal`} />
+            <StatCard label="Hydration" value={waterToday} unit="ml" color="#2ed5ff" icon={Droplets} change={`${Math.round(waterToday / 2500 * 100)}% of goal`} />
           </div>
 
           <div className="grid-2" style={{ marginBottom: '24px' }}>
-            {/* Nutrition Engine */}
             <div className="card">
               <div className="flex items-center justify-between" style={{ marginBottom: '20px' }}>
                 <div style={{ fontFamily: 'var(--font-display)', fontSize: '14px', letterSpacing: '0.06em' }}>NUTRITION ENGINE</div>
@@ -164,7 +161,6 @@ export default function Dashboard({ onNavigate }) {
               </div>
             </div>
 
-            {/* Water Tracker */}
             <div className="card">
               <div className="flex items-center justify-between" style={{ marginBottom: '16px' }}>
                 <div style={{ fontFamily: 'var(--font-display)', fontSize: '14px', letterSpacing: '0.06em' }}>WATER INTAKE</div>
@@ -187,7 +183,6 @@ export default function Dashboard({ onNavigate }) {
             </div>
           </div>
 
-          {/* Charts Row */}
           <div className="grid-2" style={{ marginBottom: '24px' }}>
             <div className="card">
               <div style={{ fontFamily: 'var(--font-display)', fontSize: '14px', letterSpacing: '0.06em', marginBottom: '12px' }}>WEIGHT TREND</div>
@@ -203,27 +198,26 @@ export default function Dashboard({ onNavigate }) {
             </div>
           </div>
 
-          {/* Bottom Grid: Achievements & Activity */}
           <div className="grid-2" style={{ marginBottom: '24px' }}>
             <div className="card">
               <div style={{ fontFamily: 'var(--font-display)', fontSize: '14px', letterSpacing: '0.06em', marginBottom: '16px' }}>ACHIEVEMENTS</div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
-                <Achievement icon="🔥" label={`${data?.streak || 0} Day Streak`} active={data?.streak > 0} />
-                <Achievement icon="💧" label="Hydrated" active={waterToday >= 2500} />
-                <Achievement icon="🏋️" label="PR King" active />
-                <Achievement icon="🥗" label="Macro Pro" active={data?.proteinToday > 100} />
-                <Achievement icon="📅" label="Planner" active />
-                <Achievement icon="🏆" label="Elite" />
+                <Achievement icon={Flame} label={`${data?.streak || 0} Day Streak`} active={data?.streak > 0} />
+                <Achievement icon={Droplets} label="Hydrated" active={waterToday >= 2500} />
+                <Achievement icon={Trophy} label="PR King" active />
+                <Achievement icon={Salad} label="Macro Pro" active={data?.proteinToday > 100} />
+                <Achievement icon={Calendar} label="Planner" active />
+                <Achievement icon={Award} label="Elite" />
               </div>
             </div>
 
             <div className="card">
               <div style={{ fontFamily: 'var(--font-display)', fontSize: '14px', letterSpacing: '0.06em', marginBottom: '16px' }}>RECENT ACTIVITY</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <ActivityItem icon="⚡" title="New Personal Record" desc="Bench Press: 100kg" time="2h ago" color="var(--accent)" />
-                <ActivityItem icon="🥗" title="Meal Logged" desc="Protein Bowl (650kcal)" time="4h ago" color="var(--orange)" />
-                <ActivityItem icon="💧" title="Goal Reached" desc="Hydration goal complete!" time="Today" color="var(--blue)" />
-                <ActivityItem icon="💪" title="Workout Finished" desc="Upper Body (A)" time="Yesterday" color="var(--green)" />
+                <ActivityItem icon={Zap} title="New Personal Record" desc="Bench Press: 100kg" time="2h ago" color="var(--accent)" />
+                <ActivityItem icon={Salad} title="Meal Logged" desc="Protein Bowl (650kcal)" time="4h ago" color="var(--orange)" />
+                <ActivityItem icon={Droplets} title="Goal Reached" desc="Hydration goal complete!" time="Today" color="#2ed5ff" />
+                <ActivityItem icon={Dumbbell} title="Workout Finished" desc="Upper Body (A)" time="Yesterday" color="var(--green)" />
               </div>
             </div>
           </div>
@@ -253,32 +247,37 @@ export default function Dashboard({ onNavigate }) {
           </div>
         </div>
       </div>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }
 
-function Achievement({ icon, label, active }) {
+function Achievement({ icon: Icon, label, active }) {
   return (
     <div style={{ 
       display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
       opacity: active ? 1 : 0.2, filter: active ? 'none' : 'grayscale(1)',
-      transition: 'all 0.3s'
+      transition: 'all 0.3s', cursor: 'default'
     }}>
       <div style={{ 
         width: '48px', height: '48px', borderRadius: '14px', background: 'var(--bg-elevated)',
         border: active ? '1px solid var(--accent-dim)' : '1px solid var(--border)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
         boxShadow: active ? '0 4px 12px var(--accent-dim)' : 'none'
-      }}>{icon}</div>
+      }}>
+        <Icon size={22} color={active ? 'var(--accent)' : 'var(--text-muted)'} />
+      </div>
       <div style={{ fontSize: '9px', textAlign: 'center', fontWeight: '700', textTransform: 'uppercase', color: active ? 'var(--text-primary)' : 'var(--text-muted)' }}>{label}</div>
     </div>
   );
 }
 
-function ActivityItem({ icon, title, desc, time, color }) {
+function ActivityItem({ icon: Icon, title, desc, time, color }) {
   return (
     <div style={{ display: 'flex', gap: '12px', alignItems: 'start' }}>
-      <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: `${color}15`, color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', flexShrink: 0 }}>{icon}</div>
+      <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: `${color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <Icon size={16} color={color} />
+      </div>
       <div style={{ flex: 1 }}>
         <div style={{ fontSize: '13px', fontWeight: '600' }}>{title}</div>
         <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{desc}</div>
@@ -288,15 +287,17 @@ function ActivityItem({ icon, title, desc, time, color }) {
   );
 }
 
-function StatCard({ label, value, unit, color, icon, change }) {
+function StatCard({ label, value, unit, color, icon: Icon, change }) {
   return (
     <div className="card" style={{ position: 'relative', overflow: 'hidden' }}>
       <div style={{
         position: 'absolute', top: '-10px', right: '-10px',
         width: '60px', height: '60px', borderRadius: '50%',
         background: `${color}15`, display: 'flex', alignItems: 'center',
-        justifyContent: 'center', fontSize: '22px', color,
-      }}>{icon}</div>
+        justifyContent: 'center',
+      }}>
+        <Icon size={24} color={color} />
+      </div>
       <div style={{ fontSize: '11px', fontWeight: '700', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>{label}</div>
       <div style={{ fontFamily: 'var(--font-display)', fontSize: 'min(36px, 8vw)', lineHeight: 1, color, marginTop: '8px' }}>
         {value} <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{unit}</span>
