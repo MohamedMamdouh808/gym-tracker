@@ -30,6 +30,16 @@ export default function Dashboard({ onNavigate }) {
   const [loading, setLoading] = useState(true);
   const [waterAmount, setWaterAmount] = useState('');
   const [isSyncing, setIsSyncing] = useState(false);
+  // Macro calculator inputs
+  const [calcWeight, setCalcWeight] = useState('');
+  const [calcHeight, setCalcHeight] = useState('');
+  const [calcAge, setCalcAge] = useState('');
+  const [calcGender, setCalcGender] = useState('male');
+  const [calcActivity, setCalcActivity] = useState('1.55');
+  const [calcGoal, setCalcGoal] = useState('maintain'); // lose, maintain, gain
+  const [macroResults, setMacroResults] = useState(null);
+  const [editingMacroGoals, setEditingMacroGoals] = useState(false);
+  const [macroGoalDraft, setMacroGoalDraft] = useState({ protein: 150, carbs: 250, fat: 70 });
 
   const fetchData = () => {
     setLoading(true);
@@ -44,6 +54,40 @@ export default function Dashboard({ onNavigate }) {
   const handleSync = () => {
     setIsSyncing(true);
     setTimeout(() => { setIsSyncing(false); fetchData(); }, 1500);
+  };
+  // Macro calculator logic
+  const calculateMacros = () => {
+    const w = parseFloat(calcWeight) || 0;
+    const h = parseFloat(calcHeight) || 0;
+    const a = parseFloat(calcAge) || 0;
+    const genderFactor = calcGender === 'male' ? 5 : -161;
+    const bmr = (10 * w) + (6.25 * h) - (5 * a) + genderFactor;
+    const tdee = Math.round(bmr * parseFloat(calcActivity));
+    let calTarget = tdee;
+    if (calcGoal === 'lose') calTarget = tdee - 500;
+    else if (calcGoal === 'gain') calTarget = tdee + 300;
+    const protein = Math.round(w * 2); // 2g per kg
+    const fat = Math.round(w * 0.8); // 0.8g per kg
+    const carbs = Math.round((calTarget - (protein * 4) - (fat * 9)) / 4);
+    setMacroResults({ calories: calTarget, protein, carbs, fat });
+  };
+
+  const startEditMacroGoals = () => {
+    setMacroGoalDraft({
+      protein: macroResults?.protein || 150,
+      carbs: macroResults?.carbs || 250,
+      fat: macroResults?.fat || 70
+    });
+    setEditingMacroGoals(true);
+  };
+
+  const saveMacroGoals = () => {
+    setMacroResults({
+      protein: parseInt(macroGoalDraft.protein) || 0,
+      carbs: parseInt(macroGoalDraft.carbs) || 0,
+      fat: parseInt(macroGoalDraft.fat) || 0
+    });
+    setEditingMacroGoals(false);
   };
 
   const handleWaterLog = async (e) => {
@@ -161,6 +205,64 @@ export default function Dashboard({ onNavigate }) {
                   </div>
                 </div>
               </div>
+            </div>
+
+            <div className="card">
+              <div className="flex items-center justify-between" style={{ marginBottom: '16px' }}>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: '14px', letterSpacing: '0.06em' }}>MACRO GOALS</div>
+                <button onClick={startEditMacroGoals} className="btn btn-ghost btn-sm" style={{ fontSize: '10px' }}>Edit</button>
+              </div>
+              {/* Display or edit mode */}
+              {editingMacroGoals ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Protein</span>
+                    <input type="number" className="input input-sm" style={{ width: '80px' }} value={macroGoalDraft.protein} onChange={e => setMacroGoalDraft({ ...macroGoalDraft, protein: e.target.value })} />
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Carbs</span>
+                    <input type="number" className="input input-sm" style={{ width: '80px' }} value={macroGoalDraft.carbs} onChange={e => setMacroGoalDraft({ ...macroGoalDraft, carbs: e.target.value })} />
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Fat</span>
+                    <input type="number" className="input input-sm" style={{ width: '80px' }} value={macroGoalDraft.fat} onChange={e => setMacroGoalDraft({ ...macroGoalDraft, fat: e.target.value })} />
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                    <button onClick={saveMacroGoals} className="btn btn-primary btn-sm">Save</button>
+                    <button onClick={() => setEditingMacroGoals(false)} className="btn btn-ghost btn-sm">Cancel</button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                      <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Protein</span>
+                      <span style={{ fontSize: '12px', fontWeight: '700', color: 'var(--blue)' }}>{Math.round(data?.proteinToday || 0)}g / {macroResults?.protein || 0}g</span>
+                    </div>
+                    <div style={{ background: 'var(--bg-elevated)', borderRadius: '4px', height: '8px', overflow: 'hidden', border: '1px solid var(--border)' }}>
+                      <div style={{ height: '100%', width: `${Math.min((data?.proteinToday || 0) / (macroResults?.protein || 1) * 100, 100)}%`, background: '#2ed5ff', transition: 'width 0.5s' }}></div>
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                      <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Carbs</span>
+                      <span style={{ fontSize: '12px', fontWeight: '700', color: 'var(--orange)' }}>{Math.round(data?.carbsToday || 0)}g / {macroResults?.carbs || 0}g</span>
+                    </div>
+                    <div style={{ background: 'var(--bg-elevated)', borderRadius: '4px', height: '8px', overflow: 'hidden', border: '1px solid var(--border)' }}>
+                      <div style={{ height: '100%', width: `${Math.min((data?.carbsToday || 0) / (macroResults?.carbs || 1) * 100, 100)}%`, background: '#ff9f43', transition: 'width 0.5s' }}></div>
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                      <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Fat</span>
+                      <span style={{ fontSize: '12px', fontWeight: '700', color: 'var(--red)' }}>{Math.round(data?.fatToday || 0)}g / {macroResults?.fat || 0}g</span>
+                    </div>
+                    <div style={{ background: 'var(--bg-elevated)', borderRadius: '4px', height: '8px', overflow: 'hidden', border: '1px solid var(--border)' }}>
+                      <div style={{ height: '100%', width: `${Math.min((data?.fatToday || 0) / (macroResults?.fat || 1) * 100, 100)}%`, background: '#ff4757', transition: 'width 0.5s' }}></div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="card">
