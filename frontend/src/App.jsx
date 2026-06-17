@@ -10,7 +10,7 @@ import AICoach from './pages/AICoach';
 import Profile from './pages/Profile';
 import Login from './pages/Login';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { ProfileProvider } from './context/ProfileContext';
+import { ProfileProvider, useProfile } from './context/ProfileContext';
 
 import HealthCalculators from './pages/HealthCalculators';
 import InBodyScan from './pages/InBodyScan';
@@ -33,6 +33,7 @@ function AppContent() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [pageKey, setPageKey] = useState(0);
   const { session } = useAuth();
+  const { loadProfile } = useProfile();
 
   const PageComponent = PAGES[activePage] || Dashboard;
 
@@ -41,6 +42,10 @@ function AppContent() {
     setPageKey(k => k + 1);
     setSidebarOpen(false);
   }
+
+  useEffect(() => {
+    if (session) loadProfile();
+  }, [session, loadProfile]);
 
   // Theme persistence
   useEffect(() => {

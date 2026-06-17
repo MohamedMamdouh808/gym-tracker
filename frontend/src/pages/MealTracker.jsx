@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Doughnut } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
-import { mealsAPI, waterAPI } from '../utils/api';
+import { mealsAPI, waterAPI, mealExtractAPI, savedFoodsAPI } from '../utils/api';
 import { useToast } from '../hooks/useToast';
 import DeleteButton from '../components/DeleteButton';
 
@@ -26,11 +26,24 @@ export default function MealTracker() {
   const [totals, setTotals] = useState({ calories: 0, protein: 0, carbs: 0, fat: 0 });
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({ date: new Date().toISOString().split('T')[0], meal_type: 'Breakfast', food_name: '', calories: '', protein: '', carbs: '', fat: '' });
+  const [savedFoods, setSavedFoods] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [waterToday, setWaterToday] = useState(0);
   const [viewDate, setViewDate] = useState(new Date().toISOString().split('T')[0]);
+  const [calorieGoal, setCalorieGoal] = useState(parseInt(localStorage.getItem('calorieGoal') || '2000'));
+  const [editingGoal, setEditingGoal] = useState(false);
+  const [expandedDates, setExpandedDates] = useState(() => new Set([new Date().toISOString().split('T')[0]]));
   const { showToast, ToastComponent } = useToast();
+
+  const toggleDate = (date) => {
+    setExpandedDates(prev => {
+      const next = new Set(prev);
+      if (next.has(date)) next.delete(date);
+      else next.add(date);
+      return next;
+    });
+  };
 
   const fetchMeals = async (date = viewDate) => {
     setLoading(true);
@@ -49,7 +62,7 @@ export default function MealTracker() {
         setTotals(dayTotals);
       }
       
-      const recentRes = await mealsAPI.get({ limit: 10 });
+      const recentRes = await mealsAPI.get({ limit: 50 });
       if (recentRes.success) {
         setRecentMeals(recentRes.data || []);
       }
@@ -72,6 +85,17 @@ export default function MealTracker() {
 
   useEffect(() => { fetchMeals(viewDate); }, [viewDate]);
 
+  const fetchSavedFoods = async () => {
+    try {
+      const res = await savedFoodsAPI.get({ limit: 100 });
+      if (res.success) {
+        setSavedFoods(res.data || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch saved foods', err);
+    }
+  };
+
   const logWater = async (amount) => {
     try {
       await waterAPI.log({ date: viewDate, amount_ml: amount });
@@ -82,10 +106,45 @@ export default function MealTracker() {
     }
   };
 
-  useEffect(() => { fetchMeals(); }, []);
+  useEffect(() => {
+    fetchMeals();
+    fetchSavedFoods();
+  }, []);
 
   const fillFromPreset = (food) => {
     setForm(f => ({ ...f, food_name: food.name, calories: food.calories, protein: food.protein, carbs: food.carbs, fat: food.fat }));
+  };
+
+  const saveAsMyFood = async () => {
+    if (!form.food_name) return showToast('Please enter a food name', 'error');
+    setSubmitting(true);
+    try {
+      const payload = {
+        food_name: form.food_name,
+        calories: parseFloat(form.calories) || 0,
+        protein: parseFloat(form.protein) || 0,
+        carbs: parseFloat(form.carbs) || 0,
+        fat: parseFloat(form.fat) || 0
+      };
+      await savedFoodsAPI.save(payload);
+      showToast('Saved as My Food!');
+      setForm({ date: viewDate, meal_type: 'Breakfast', food_name: '', calories: '', protein: '', carbs: '', fat: '' });
+      fetchSavedFoods();
+    } catch (err) {
+      showToast(err || 'Failed to save food', 'error');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const deleteSavedFood = async (id) => {
+    try {
+      await savedFoodsAPI.delete(id);
+      showToast('Saved food deleted');
+      fetchSavedFoods();
+    } catch (err) {
+      showToast(err || 'Failed to delete', 'error');
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -172,9 +231,33 @@ export default function MealTracker() {
             )}
           </div>
           
+          {/* Your Foods */}
+          <div style={{ marginBottom: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <label className="input-label">Your Foods</label>
+              <button type="button" onClick={saveAsMyFood} className="btn btn-ghost" style={{ padding: '4px 8px', fontSize: '10px' }}>
+                + SAVE
+              </button>
+            </div>
+            {savedFoods.length > 0 ? (
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                {savedFoods.map(f => (
+                  <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <button type="button" onClick={() => fillFromPreset(f)} className="btn btn-ghost" style={{ padding: '5px 10px', fontSize: '11px' }}>
+                      {f.food_name.split(' ')[0]}
+                    </button>
+                    <button type="button" onClick={() => deleteSavedFood(f.id)} className="btn" style={{ padding: '2px 6px', fontSize: '10px', background: 'var(--red)', color: '#fff' }}>✕</button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontStyle: 'italic' }}>No saved foods yet. Save one below!</div>
+            )}
+          </div>
+
           {/* Quick fill */}
           <div style={{ marginBottom: '16px' }}>
-            <label className="input-label">Quick Fill</label>
+            <label className="input-label">Common Foods</label>
             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
               {COMMON_FOODS.map(f => (
                 <button key={f.name} type="button" onClick={() => fillFromPreset(f)} className="btn btn-ghost" style={{ padding: '5px 10px', fontSize: '11px' }}>
@@ -257,13 +340,32 @@ export default function MealTracker() {
           
           {/* Calorie goal progress */}
           <div className="card">
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: '14px', letterSpacing: '0.06em', marginBottom: '12px' }}>CALORIE GOAL (2000 kcal)</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: '14px', letterSpacing: '0.06em' }}>CALORIE GOAL</div>
+              {!editingGoal ? (
+                <button onClick={() => setEditingGoal(true)} className="btn btn-ghost" style={{ padding: '4px 8px', fontSize: '11px' }}>EDIT</button>
+              ) : (
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <input type="number" className="input" style={{ width: '100px', fontSize: '12px' }} value={calorieGoal} onChange={(e) => setCalorieGoal(parseInt(e.target.value) || 0)} />
+                  <button onClick={() => {
+                    localStorage.setItem('calorieGoal', calorieGoal.toString());
+                    setEditingGoal(false);
+                    showToast('Goal updated!');
+                  }} className="btn btn-primary" style={{ padding: '4px 8px', fontSize: '11px' }}>SAVE</button>
+                  <button onClick={() => {
+                    setCalorieGoal(2000);
+                    setEditingGoal(false);
+                  }} className="btn btn-ghost" style={{ padding: '4px 8px', fontSize: '11px' }}>CANCEL</button>
+                </div>
+              )}
+            </div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px' }}>{calorieGoal} kcal</div>
             <div style={{ background: 'var(--bg-elevated)', borderRadius: '4px', height: '8px', overflow: 'hidden' }}>
-              <div style={{ height: '100%', width: `${Math.min(totals.calories / 2000 * 100, 100)}%`, background: totals.calories > 2000 ? 'var(--red)' : 'var(--accent)', transition: 'width 0.5s', borderRadius: '4px' }} />
+              <div style={{ height: '100%', width: `${Math.min(totals.calories / calorieGoal * 100, 100)}%`, background: totals.calories > calorieGoal ? 'var(--red)' : 'var(--accent)', transition: 'width 0.5s', borderRadius: '4px' }} />
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', fontSize: '11px', color: 'var(--text-muted)' }}>
               <span>{Math.round(totals.calories)} consumed</span>
-              <span>{Math.max(0, 2000 - totals.calories)} remaining</span>
+              <span>{Math.max(0, calorieGoal - totals.calories)} remaining</span>
             </div>
           </div>
 
@@ -325,22 +427,118 @@ export default function MealTracker() {
         )}
       </div>
 
-      {/* Recent History */}
+      {/* Recent History — grouped by date, collapsible */}
       <div className="card" style={{ marginTop: '24px' }}>
         <div style={{ fontFamily: 'var(--font-display)', fontSize: '16px', letterSpacing: '0.06em', marginBottom: '16px' }}>RECENT LOGS (ALL TIME)</div>
-        {recentMeals.length > 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {recentMeals.map(m => (
-              <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'var(--bg-elevated)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
-                <div>
-                  <div style={{ fontWeight: '600', fontSize: '12px' }}>{m.food_name}</div>
-                  <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{m.date} • {m.meal_type}</div>
-                </div>
-                <div style={{ fontSize: '11px', color: 'var(--accent)', fontWeight: '700' }}>{m.calories} kcal</div>
-              </div>
-            ))}
-          </div>
-        ) : (
+        {recentMeals.length > 0 ? (() => {
+          // Group meals by date, sorted newest first
+          const groups = recentMeals.reduce((acc, m) => {
+            if (!acc[m.date]) acc[m.date] = [];
+            acc[m.date].push(m);
+            return acc;
+          }, {});
+          const sortedDates = Object.keys(groups).sort((a, b) => b.localeCompare(a));
+
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {sortedDates.map(date => {
+                const dayMeals = groups[date];
+                const dayCalories = dayMeals.reduce((s, m) => s + (m.calories || 0), 0);
+                const dayProtein  = dayMeals.reduce((s, m) => s + (m.protein  || 0), 0);
+                const dayCarbs    = dayMeals.reduce((s, m) => s + (m.carbs    || 0), 0);
+                const dayFat      = dayMeals.reduce((s, m) => s + (m.fat      || 0), 0);
+                const isToday = date === new Date().toISOString().split('T')[0];
+                const isOpen  = expandedDates.has(date);
+                const label   = isToday ? `TODAY — ${date}` : date;
+
+                return (
+                  <div key={date}>
+                    {/* Clickable date header */}
+                    <button
+                      onClick={() => toggleDate(date)}
+                      style={{
+                        width: '100%',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '10px 12px',
+                        background: isOpen
+                          ? 'linear-gradient(90deg, rgba(var(--accent-rgb, 46,213,255),0.12), transparent)'
+                          : 'linear-gradient(90deg, var(--bg-elevated), transparent)',
+                        borderLeft: `3px solid ${isToday ? 'var(--accent)' : 'var(--border)'}`,
+                        borderRadius: '0 var(--radius-sm) var(--radius-sm) 0',
+                        border: 'none',
+                        borderLeft: `3px solid ${isToday ? 'var(--accent)' : 'var(--border)'}`,
+                        cursor: 'pointer',
+                        transition: 'background 0.2s',
+                        textAlign: 'left',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{
+                          fontSize: '10px',
+                          color: 'var(--text-muted)',
+                          transition: 'transform 0.2s',
+                          display: 'inline-block',
+                          transform: isOpen ? 'rotate(0deg)' : 'rotate(-90deg)',
+                        }}>▼</span>
+                        <span style={{
+                          fontFamily: 'var(--font-display)',
+                          fontSize: '12px',
+                          letterSpacing: '0.08em',
+                          color: isToday ? 'var(--accent)' : 'var(--text-primary)',
+                        }}>
+                          {label}
+                        </span>
+                        <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+                          {dayMeals.length} item{dayMeals.length !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', gap: '12px', fontSize: '11px', fontFamily: 'var(--font-mono)' }}>
+                        <span style={{ color: 'var(--accent)', fontWeight: '700' }}>{dayCalories} kcal</span>
+                        <span style={{ color: 'var(--blue)' }}>P {dayProtein}g</span>
+                        <span style={{ color: 'var(--orange)' }}>C {dayCarbs}g</span>
+                        <span style={{ color: 'var(--red)' }}>F {dayFat}g</span>
+                      </div>
+                    </button>
+
+                    {/* Meals — only rendered when expanded */}
+                    {isOpen && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px', paddingLeft: '16px' }}>
+                        {dayMeals.map(m => (
+                          <div key={m.id} style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            padding: '8px 12px',
+                            background: 'var(--bg-elevated)',
+                            borderRadius: 'var(--radius-sm)',
+                            border: '1px solid var(--border-subtle)',
+                          }}>
+                            <div>
+                              <div style={{ fontWeight: '600', fontSize: '13px' }}>{m.food_name}</div>
+                              <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px', letterSpacing: '0.04em', textTransform: 'uppercase' }}>{m.meal_type}</div>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <div style={{ display: 'flex', gap: '12px', fontSize: '11px', fontFamily: 'var(--font-mono)', flexShrink: 0 }}>
+                                <span style={{ color: 'var(--accent)', fontWeight: '700' }}>{m.calories} kcal</span>
+                                <span style={{ color: 'var(--blue)' }}>P {m.protein}g</span>
+                                <span style={{ color: 'var(--orange)' }}>C {m.carbs}g</span>
+                                <span style={{ color: 'var(--red)' }}>F {m.fat}g</span>
+                              </div>
+                              <button onClick={() => handleEdit(m)} className="btn btn-ghost" style={{ padding: '4px 8px', fontSize: '10px' }}>EDIT</button>
+                              <DeleteButton onDelete={() => handleDelete(m.id)} label="DEL" />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })() : (
           <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '20px', fontSize: '12px' }}>No history yet</div>
         )}
       </div>

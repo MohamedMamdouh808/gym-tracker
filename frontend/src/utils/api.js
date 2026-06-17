@@ -68,6 +68,19 @@ export const waterAPI = {
 export const prAPI = {
   get: () => API.get('/api/prs'),
   update: (data) => API.post('/api/prs', data),
+  delete: (id) => API.delete(`/api/prs/${id}`),
+};
+
+export const mealExtractAPI = {
+  extract: (text) => API.post('/api/meal/extract', { text }),
+};
+
+// ============ SAVED FOODS (MY FOODS) ============
+export const savedFoodsAPI = {
+  get: (params) => API.get('/api/saved-foods', { params }),
+  save: (data) => API.post('/api/saved-foods', data),
+  update: (id, data) => API.put(`/api/saved-foods/${id}`, data),
+  delete: (id) => API.delete(`/api/saved-foods/${id}`),
 };
 
 export const aiAPI = {

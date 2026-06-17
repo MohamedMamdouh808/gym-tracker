@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Line, Bar } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler } from 'chart.js';
 import { weightAPI, mealsAPI, workoutLogAPI, reportsAPI, prAPI } from '../utils/api';
+import { useProfile } from '../context/ProfileContext';
 import DeleteButton from '../components/DeleteButton';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler);
@@ -16,6 +17,7 @@ const chartBase = {
 };
 
 export default function Progress() {
+  const { formatWeight, weightUnit, toMetricWeight } = useProfile();
   const [weightData, setWeightData] = useState([]);
   const [calData, setCalData] = useState([]);
   const [workoutDates, setWorkoutDates] = useState([]);
@@ -72,7 +74,7 @@ export default function Progress() {
   const weightChartData = {
     labels: weightData.map(d => d.date.slice(5)),
     datasets: [{
-      label: 'Weight (kg)', data: weightData.map(d => d.weight),
+      label: `Weight (${weightUnit})`, data: weightData.map(d => formatWeight(d.weight).value),
       borderColor: '#e8ff47', backgroundColor: 'rgba(232,255,71,0.08)',
       borderWidth: 2, tension: 0.4, fill: true, pointRadius: 3, pointBackgroundColor: '#e8ff47',
     }],
@@ -169,7 +171,7 @@ export default function Progress() {
         <div className="card">
           <div style={{ fontSize: '10px', fontWeight: '700', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Weight Change (7d)</div>
           <div style={{ fontFamily: 'var(--font-display)', fontSize: 'min(36px, 10vw)', color: diff < 0 ? 'var(--green)' : diff > 0 ? 'var(--red)' : 'var(--accent)', marginTop: '6px' }}>
-            {diff !== null ? `${diff > 0 ? '+' : ''}${diff} kg` : '—'}
+            {diff !== null ? `${diff > 0 ? '+' : ''}${formatWeight(Math.abs(diff)).value * (diff < 0 ? -1 : 1)} ${weightUnit}` : '—'}
           </div>
         </div>
         <div className="card">
@@ -229,7 +231,7 @@ export default function Progress() {
           <div style={{ marginBottom: '16px' }}>
             <label className="input-label">Height (cm)</label>
             <input type="number" className="input" placeholder="e.g. 175" value={height} onChange={e => setHeight(e.target.value)} />
-            {latestWeight && <p style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '4px' }}>Using latest weight: {latestWeight}kg</p>}
+            {latestWeight && <p style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '4px' }}>Using latest weight: {formatWeight(latestWeight).value}{weightUnit}</p>}
           </div>
           {height && latestWeight ? (
             <div style={{ padding: '16px', background: 'var(--bg-elevated)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}>
@@ -323,8 +325,8 @@ export default function Progress() {
                   <span style={{ fontWeight: '600', fontSize: '13px' }}>{pr.exercise}</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-                  <span style={{ fontFamily: 'var(--font-display)', fontSize: '18px', color: 'var(--accent)' }}>{pr.weight}</span>
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>KG</span>
+                  <span style={{ fontFamily: 'var(--font-display)', fontSize: '18px', color: 'var(--accent)' }}>{formatWeight(pr.weight).value}</span>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{weightUnit.toUpperCase()}</span>
                 </div>
               </div>
             )) : (

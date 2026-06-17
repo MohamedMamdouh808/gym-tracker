@@ -630,6 +630,18 @@ app.post('/api/prs', async (req, res) => {
   res.status(201).json({ success: true, data: data[0] });
 });
 
+app.delete('/api/prs/:id', async (req, res) => {
+  const user_id = getUserId(req);
+  const { error } = await getAuthenticatedSupabase(req)
+    .from('personal_records')
+    .delete()
+    .eq('id', req.params.id)
+    .eq('user_id', user_id);
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ success: true, message: 'Personal record deleted' });
+});
+
 // ============ AI COACH (Gemini) ============
 app.post('/api/ai/coach', async (req, res) => {
   const user_id = getUserId(req);
@@ -1156,6 +1168,175 @@ app.get('/api/profile/stats', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// ============ SAVED FOODS (MY FOODS) ============
+app.post('/api/saved-foods', async (req, res) => {
+  const { food_name, calories, protein, carbs, fat } = req.body;
+  const user_id = getUserId(req);
+
+  if (!food_name) return res.status(400).json({ error: 'food_name required' });
+
+  const { data, error } = await getAuthenticatedSupabase(req)
+    .from('saved_foods')
+    .insert([{
+      user_id,
+      food_name,
+      calories: Math.round(+calories) || 0,
+      protein: Math.round(+protein * 10) / 10 || 0,
+      carbs: Math.round(+carbs * 10) / 10 || 0,
+      fat: Math.round(+fat * 10) / 10 || 0
+    }])
+    .select();
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.status(201).json({ success: true, data: data[0] });
+});
+
+app.get('/api/saved-foods', async (req, res) => {
+  const user_id = getUserId(req);
+  const limit = +(req.query.limit || 50);
+
+  const { data, error } = await getAuthenticatedSupabase(req)
+    .from('saved_foods')
+    .select('*')
+    .eq('user_id', user_id)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ success: true, data: data || [] });
+});
+
+app.put('/api/saved-foods/:id', async (req, res) => {
+  const { food_name, calories, protein, carbs, fat } = req.body;
+  const user_id = getUserId(req);
+
+  if (!food_name) return res.status(400).json({ error: 'food_name required' });
+
+  const { data, error } = await getAuthenticatedSupabase(req)
+    .from('saved_foods')
+    .update({
+      food_name,
+      calories: Math.round(+calories) || 0,
+      protein: Math.round(+protein * 10) / 10 || 0,
+      carbs: Math.round(+carbs * 10) / 10 || 0,
+      fat: Math.round(+fat * 10) / 10 || 0
+    })
+    .eq('id', req.params.id)
+    .eq('user_id', user_id)
+    .select();
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ success: true, data: data[0] });
+});
+
+app.delete('/api/saved-foods/:id', async (req, res) => {
+  const user_id = getUserId(req);
+  const { error } = await getAuthenticatedSupabase(req)
+    .from('saved_foods')
+    .delete()
+    .eq('id', req.params.id)
+    .eq('user_id', user_id);
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ success: true, message: 'Saved food deleted' });
+});
+
+// ============ MEAL EXTRACTION FROM VOICE ============
+app.post('/api/meal/extract', async (req, res) => {
+  const { text } = req.body;
+  const user_id = getUserId(req);
+
+  if (!text) return res.status(400).json({ error: 'text required' });
+
+  // Use Groq primary if available
+  let extracted = null;
+  if (process.env.GROQ_API_KEY) {
+    try {
+      const completion = await groq.chat.completions.create({
+        messages: [
+          {
+            role: "system",
+            content: `You are a nutrition expert. Extract meal details from the following text and return ONLY a JSON object with these fields (use 0 for missing values, infer meal_type if not specified):
+{
+  "food_name": "exact food name or description",
+  "calories": number,
+  "protein": number (in grams),
+  "carbs": number (in grams),
+  "fat": number (in grams),
+  "meal_type": "Breakfast" | "Lunch" | "Dinner" | "Snack" | "Pre-workout" | "Post-workout" | null
+}
+If the text mentions multiple foods, pick the main one or ask for clarification. Return ONLY the JSON, no markdown, no explanation.`
+          },
+          { role: "user", content: text }
+        ],
+        model: "llama-3.3-70b-versatile",
+        temperature: 0.1,
+        max_tokens: 1024,
+        response_format: { type: 'json_object' }
+      });
+
+      const rawText = completion.choices[0]?.message?.content || '';
+      extracted = JSON.parse(rawText);
+      console.log('✅ Meal extracted via Groq');
+    } catch (groqErr) {
+      console.error('Groq extraction failed:', groqErr.message);
+    }
+  }
+
+  // Fallback to Gemini
+  if (!extracted && process.env.GEMINI_API_KEY) {
+    try {
+      const geminiModel = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const result = await geminiModel.generateContent([
+        `Extract meal details from the following text and return ONLY a JSON object with these fields (use 0 for missing values, infer meal_type if not specified):
+{
+  "food_name": "exact food name or description",
+  "calories": number,
+  "protein": number (in grams),
+  "carbs": number (in grams),
+  "fat": number (in grams),
+  "meal_type": "Breakfast" | "Lunch" | "Dinner" | "Snack" | "Pre-workout" | "Post-workout" | null
+}
+If the text mentions multiple foods, pick the main one or ask for clarification. Return ONLY the JSON, no markdown, no explanation.`,
+        text
+      ]);
+
+      let rawText = result.response.text().trim();
+      rawText = rawText.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
+      extracted = JSON.parse(rawText);
+      console.log('✅ Meal extracted via Gemini');
+    } catch (gemErr) {
+      console.error('Gemini extraction failed:', gemErr.message);
+      return res.status(500).json({ error: 'Failed to extract meal information. Please try again.' });
+    }
+  }
+
+  if (!extracted) {
+    return res.status(500).json({ error: 'AI service unavailable for meal extraction.' });
+  }
+
+  // Set default meal type if not extracted
+  if (!extracted.meal_type) {
+    const hour = new Date().getHours();
+    if (hour < 10) extracted.meal_type = 'Breakfast';
+    else if (hour < 14) extracted.meal_type = 'Lunch';
+    else if (hour < 18) extracted.meal_type = 'Snack';
+    else extracted.meal_type = 'Dinner';
+  }
+
+  // Set default date to today
+  const today = new Date().toISOString().split('T')[0];
+  extracted.date = today;
+
+  // Round numbers
+  extracted.calories = Math.round(extracted.calories || 0);
+  extracted.protein = Math.round(extracted.protein || 0);
+  extracted.carbs = Math.round(extracted.carbs || 0);
+  extracted.fat = Math.round(extracted.fat || 0);
+
+  res.json({ success: true, data: extracted });
 });
 
 // ============ START SERVER ============

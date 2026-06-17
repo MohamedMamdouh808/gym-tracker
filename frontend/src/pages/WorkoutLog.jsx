@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { workoutLogAPI, workoutPlanAPI } from '../utils/api';
+import { useProfile } from '../context/ProfileContext';
 import { useToast } from '../hooks/useToast';
 import DeleteButton from '../components/DeleteButton';
 
 const DAYS_MAP = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 export default function WorkoutLog() {
+  const { formatWeight, weightUnit, toMetricWeight } = useProfile();
   const [logs, setLogs] = useState([]);
   const [todayPlan, setTodayPlan] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -40,7 +42,7 @@ export default function WorkoutLog() {
     if (!form.exercise) return showToast('Please enter an exercise', 'error');
     setSubmitting(true);
     try {
-      const payload = { ...form, sets: parseInt(form.sets), reps: parseInt(form.reps), weight: parseFloat(form.weight) || 0 };
+      const payload = { ...form, sets: parseInt(form.sets), reps: parseInt(form.reps), weight: toMetricWeight(parseFloat(form.weight)) || 0 };
       if (editingId) {
         await workoutLogAPI.update(editingId, payload);
         showToast('Log updated!');
@@ -62,7 +64,7 @@ export default function WorkoutLog() {
       exercise: log.exercise,
       sets: String(log.sets),
       reps: String(log.reps),
-      weight: String(log.weight)
+      weight: String(formatWeight(log.weight).value)
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -142,7 +144,7 @@ export default function WorkoutLog() {
           <div className="grid-2">
             {[
               { label: 'Sets Done', value: todayLogs.reduce((s, l) => s + l.sets, 0), color: 'var(--accent)' },
-              { label: 'Total Volume', value: `${Math.round(volume)}kg`, color: 'var(--blue)' },
+              { label: 'Total Volume', value: `${formatWeight(Math.round(volume)).value}${weightUnit}`, color: 'var(--blue)' },
             ].map(s => (
               <div key={s.label} className="card" style={{ padding: '16px' }}>
                 <div style={{ fontSize: '10px', fontWeight: '700', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>{s.label}</div>
@@ -181,7 +183,7 @@ export default function WorkoutLog() {
                 <input type="number" className="input" min="1" value={form.reps} onChange={e => setForm({...form, reps: e.target.value})} />
               </div>
               <div>
-                <label className="input-label">Weight (kg)</label>
+                <label className="input-label">Weight ({weightUnit})</label>
                 <input type="number" step="0.5" className="input" placeholder="60" value={form.weight} onChange={e => setForm({...form, weight: e.target.value})} />
               </div>
             </div>
@@ -203,7 +205,7 @@ export default function WorkoutLog() {
                 const r = parseInt(document.getElementById('orm-r').value);
                 if (w && r) {
                   const orm = Math.round(w * (1 + r/30));
-                  showToast(`Estimated 1RM: ${orm}kg`);
+                  showToast(`Estimated 1RM: ${orm}${weightUnit}`);
                 }
               }} className="btn btn-ghost" style={{ width: '100%', fontSize: '10px', height: '28px' }}>CALCULATE</button>
             </div>
@@ -228,7 +230,7 @@ export default function WorkoutLog() {
                 <div key={date} style={{ marginBottom: '20px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', paddingBottom: '8px', borderBottom: '1px solid var(--border)' }}>
                     <div style={{ fontWeight: '600', color: 'var(--text-primary)', fontSize: '13px' }}>{date}</div>
-                    <div style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>Vol: {Math.round(dayVolume)}kg</div>
+                    <div style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>Vol: {formatWeight(Math.round(dayVolume)).value}{weightUnit}</div>
                   </div>
                   <div style={{ overflowX: 'auto' }}>
                     <table className="table" style={{ minWidth: '400px' }}>
@@ -247,8 +249,8 @@ export default function WorkoutLog() {
                             </td>
                             <td style={{ fontFamily: 'var(--font-mono)' }}>{log.sets}</td>
                             <td style={{ fontFamily: 'var(--font-mono)' }}>{log.reps}</td>
-                            <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent)' }}>{log.weight}kg</td>
-                            <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--blue)' }}>{log.sets * log.reps * log.weight}kg</td>
+                            <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent)' }}>{formatWeight(log.weight).value}{weightUnit}</td>
+                            <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--blue)' }}>{formatWeight(log.sets * log.reps * log.weight).value}{weightUnit}</td>
                           </tr>
                         ))}
                       </tbody>

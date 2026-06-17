@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useToast } from '../hooks/useToast';
 import { inbodyAPI } from '../utils/api';
+import { useProfile } from '../context/ProfileContext';
 import DeleteButton from '../components/DeleteButton';
 import { 
   Scale, BicepsFlexed, Zap, Droplet, Activity, Timer, 
@@ -382,6 +383,7 @@ function HistoryRow({ scan, onExpand, expanded, onDelete, onUpdate }) {
 }
 
 export default function InBodyScan() {
+  const { formatWeight, weightUnit } = useProfile();
   const [dragOver, setDragOver] = useState(false);
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);

@@ -7,7 +7,7 @@ import { Flame, Trophy, Medal, Award, Dumbbell } from 'lucide-react';
 
 export default function Profile() {
   const { session } = useAuth();
-  const { setDisplayName, setAvatarLetter } = useProfile();
+  const { setDisplayName, setAvatarLetter, updateSettings, formatWeight, weightUnit } = useProfile();
   const user = session?.user;
 
   const [loading, setLoading] = useState(true);
@@ -76,8 +76,7 @@ export default function Profile() {
     try {
       setSaving(true);
       await profileAPI.update(profileData);
-      setDisplayName(profileData.display_name);
-      setAvatarLetter(profileData.display_name[0] || '');
+      updateSettings(profileData);
       alert('Profile updated successfully!');
     } catch (err) {
       console.error('Failed to save profile', err);
@@ -150,7 +149,7 @@ export default function Profile() {
         </div>
         <div style={{ padding: '24px', background: 'var(--bg-elevated)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', textAlign: 'center' }}>
           <div style={{ fontSize: '12px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Total Volume Lifted</div>
-          <div style={{ fontSize: '32px', fontWeight: '800', color: 'var(--text-primary)', marginTop: '8px' }}>{(stats?.totalVolume || 0).toLocaleString()} <span style={{fontSize: '14px'}}>kg</span></div>
+          <div style={{ fontSize: '32px', fontWeight: '800', color: 'var(--text-primary)', marginTop: '8px' }}>{formatWeight(stats?.totalVolume || 0).value.toLocaleString()} <span style={{fontSize: '14px'}}>{weightUnit}</span></div>
         </div>
       </div>
       {renderHeatmap()}

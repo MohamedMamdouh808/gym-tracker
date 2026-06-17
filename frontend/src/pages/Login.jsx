@@ -82,7 +82,7 @@ export default function Login() {
               label: 'input-label',
             }
           }}
-          providers={['google', 'github']}
+          providers={['google']}
           theme="dark"
         />
 

@@ -5,6 +5,7 @@ import {
   LineElement, BarElement, Title, Tooltip, Legend, Filler
 } from 'chart.js';
 import { dashboardAPI, waterAPI } from '../utils/api';
+import { useProfile } from '../context/ProfileContext';
 import { 
   RefreshCw, Scale, Flame, Droplets, Trophy, 
   Zap, Salad, Dumbbell, Calendar, Target, Award,
@@ -24,6 +25,7 @@ const chartDefaults = {
 };
 
 export default function Dashboard({ onNavigate }) {
+  const { formatWeight, weightUnit } = useProfile();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [waterAmount, setWaterAmount] = useState('');
@@ -129,7 +131,7 @@ export default function Dashboard({ onNavigate }) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
         <div className="main-content-inner">
           <div className="grid-3" style={{ marginBottom: '24px' }}>
-            <StatCard label="Body Mass" value={data?.latestWeight?.weight || '--'} unit="kg" color="var(--accent)" icon={Scale} change="Trend: Stable" />
+            <StatCard label="Body Mass" value={data?.latestWeight?.weight ? formatWeight(data.latestWeight.weight).value : '--'} unit={weightUnit} color="var(--accent)" icon={Scale} change="Trend: Stable" />
             <StatCard label="Energy Balance" value={Math.round(data?.caloriesToday || 0)} unit="kcal" color="var(--orange)" icon={Flame} change={`${Math.round((data?.caloriesToday || 0) / 2500 * 100)}% of goal`} />
             <StatCard label="Hydration" value={waterToday} unit="ml" color="#2ed5ff" icon={Droplets} change={`${Math.round(waterToday / 2500 * 100)}% of goal`} />
           </div>
