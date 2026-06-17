@@ -225,33 +225,7 @@ export default function Progress() {
           )}
         </div>
 
-        {/* BMI Calculator */}
-        <div className="card">
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: '18px', letterSpacing: '0.06em', marginBottom: '16px' }}>BMI CALCULATOR</div>
-          <div style={{ marginBottom: '16px' }}>
-            <label className="input-label">Height (cm)</label>
-            <input type="number" className="input" placeholder="e.g. 175" value={height} onChange={e => setHeight(e.target.value)} />
-            {latestWeight && <p style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '4px' }}>Using latest weight: {formatWeight(latestWeight).value}{weightUnit}</p>}
-          </div>
-          {height && latestWeight ? (
-            <div style={{ padding: '16px', background: 'var(--bg-elevated)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}>
-              <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Current BMI Score</div>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', marginTop: '6px' }}>
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: '36px', color: 'var(--accent)' }}>
-                  {calculateBMI(latestWeight, height)}
-                </div>
-                <div style={{ fontSize: '16px', fontWeight: '700', color: getBMICategory(calculateBMI(latestWeight, height)).color }}>
-                  {getBMICategory(calculateBMI(latestWeight, height)).label.toUpperCase()}
-                </div>
               </div>
-            </div>
-          ) : (
-            <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', border: '1px dashed var(--border)', borderRadius: 'var(--radius-sm)', fontSize: '13px' }}>
-              {!latestWeight ? 'Log your weight first' : 'Enter height to see BMI'}
-            </div>
-          )}
-        </div>
-      </div>
 
       {/* Heatmap calendar */}
       <div className="card" style={{ marginTop: '24px' }}>

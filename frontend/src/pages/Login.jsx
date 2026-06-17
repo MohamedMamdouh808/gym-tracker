@@ -55,8 +55,8 @@ export default function Login() {
             variables: {
               default: {
                 colors: {
-                  brand: 'var(--accent)',
-                  brandAccent: 'var(--accent)',
+                  brand: 'var(--blue)',
+                  brandAccent: 'var(--blue)',
                   inputBackground: 'var(--bg-elevated)',
                   inputText: 'var(--text-primary)',
                   inputBorder: 'var(--border)',

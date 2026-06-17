@@ -117,6 +117,13 @@ html, body {
 }
 
 /* ── Buttons ── */
+
+/* Supabase Auth UI button – improve contrast */
+.supabase-auth-ui_ui-button {
+  background: var(--accent) !important;
+  color: #070b0f !important; /* dark text for legibility */
+}
+
 .btn {
   display: inline-flex;
   align-items: center;
@@ -144,7 +151,7 @@ html, body {
 }
 .btn:hover::after { opacity: 1; }
 
-.btn-primary { background: var(--accent); color: #070b0f; }
+.btn-primary { background: var(--accent); color: var(--text-primary); }
 .btn-primary:hover {
   background: #f5ff70;
   box-shadow: 0 0 24px var(--accent-glow), 0 4px 12px rgba(0,0,0,0.3);

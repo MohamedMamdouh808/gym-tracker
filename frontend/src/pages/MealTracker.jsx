@@ -218,6 +218,7 @@ export default function MealTracker() {
         <h1 className="section-title">MEAL TRACKER</h1>
         <p className="section-subtitle">Track your nutrition and macros</p>
       </div>
+      
 
       <div className="grid-2" style={{ marginBottom: '24px', alignItems: 'start' }}>
         {/* Form */}
