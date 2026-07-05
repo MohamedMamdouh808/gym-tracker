@@ -6,6 +6,7 @@ import { supabase } from '../utils/supabaseClient';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
+
 const EXERCISES = {
   Chest: ['Bench Press', 'Incline Press', 'Cable Fly', 'Push-ups', 'Dips'],
   Back: ['Pull-ups', 'Barbell Row', 'Lat Pulldown', 'Seated Row', 'Deadlift'],
@@ -72,6 +73,7 @@ export default function WorkoutPlanner() {
   const [communityPlans, setCommunityPlans] = useState([]);
   const [loadingCommunity, setLoadingCommunity] = useState(false);
   const [currentUserId, setCurrentUserId] = useState(null);
+  const [reviewPlan, setReviewPlan] = useState(null);
 
   const fetchPlans = async () => {
     try {
@@ -155,9 +157,7 @@ export default function WorkoutPlanner() {
   };
 
   const adoptPlan = async (template) => {
-    // If it's a dynamic community plan, use its 'exercises' array. 
-    // Otherwise fallback to hardcoded COMMUNITY_PLANS_DATA.
-    const exercises = template.exercises || COMMUNITY_PLANS_DATA[template.id];
+    const exercises = Array.isArray(template.exercises) ? template.exercises : COMMUNITY_PLANS_DATA[template.id];
     if (!exercises || exercises.length === 0) return showToast('This plan has no exercises.', 'error');
 
     showToast(`Adopting ${template.name}...`, 'success');
@@ -401,13 +401,22 @@ export default function WorkoutPlanner() {
                 <div>Exercises: <span style={{ color: 'var(--text-primary)' }}>{Array.isArray(plan.exercises) ? plan.exercises.length : plan.exercises}</span></div>
               </div>
 
-              <button 
-                onClick={() => adoptPlan(plan)}
-                className="btn btn-primary" 
-                style={{ width: '100%', borderRadius: '8px' }}
-              >
-                ADOPT PROGRAM
-              </button>
+              <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+                <button 
+                  onClick={() => setReviewPlan(plan)}
+                  className="btn btn-ghost" 
+                  style={{ flex: 1, borderRadius: '8px', fontSize: '12px' }}
+                >
+                  VIEW PROGRAM
+                </button>
+                <button 
+                  onClick={() => adoptPlan(plan)}
+                  className="btn btn-primary" 
+                  style={{ flex: 1, borderRadius: '8px' }}
+                >
+                  ADOPT
+                </button>
+              </div>
             </div>
           ))}
           <div onClick={handleShareProgram} className="card hover-lift" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px dashed var(--border)', background: 'transparent' }}>
@@ -418,6 +427,88 @@ export default function WorkoutPlanner() {
           </div>
         </div>
       )}
+
+      {/* Review Modal */}
+      {reviewPlan && (() => {
+        const exercises = Array.isArray(reviewPlan.exercises) ? reviewPlan.exercises : COMMUNITY_PLANS_DATA[reviewPlan.id];
+        if (!exercises) return null;
+        const grouped = {};
+        DAYS.forEach(d => { const e = exercises.filter(ex => ex.day_of_week === d); if (e.length) grouped[d] = e; });
+        return (
+          <div onClick={() => setReviewPlan(null)}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 1000,
+              background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              padding: '20px'
+            }}
+          >
+            <div onClick={e => e.stopPropagation()}
+              style={{
+                background: 'var(--bg)', borderRadius: 'var(--radius-lg)',
+                border: '1px solid var(--border-bright)',
+                maxWidth: '600px', width: '100%', maxHeight: '80vh',
+                display: 'flex', flexDirection: 'column',
+                boxShadow: '0 24px 80px rgba(0,0,0,0.5)'
+              }}
+            >
+              {/* Header */}
+              <div style={{ padding: '24px 24px 16px', borderBottom: '1px solid var(--border)' }}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="badge badge-accent" style={{ marginBottom: '8px', display: 'inline-block' }}>{(reviewPlan.difficulty || 'Intermediate').toUpperCase()}</span>
+                    <h2 style={{ margin: '8px 0 4px', fontFamily: 'var(--font-display)', fontSize: '22px' }}>{reviewPlan.name}</h2>
+                    <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+                      by <span style={{ color: 'var(--accent)' }}>{reviewPlan.author}</span>
+                      <span style={{ margin: '0 8px' }}>·</span>
+                      ★ {reviewPlan.rating || '5.0'}
+                      <span style={{ margin: '0 8px' }}>·</span>
+                      {exercises.length} exercises
+                    </div>
+                  </div>
+                  <button onClick={() => setReviewPlan(null)} className="btn btn-ghost" style={{ padding: '6px 12px', fontSize: '16px' }}>✕</button>
+                </div>
+              </div>
+              {/* Body - exercise list grouped by day */}
+              <div style={{ padding: '16px 24px', overflowY: 'auto', flex: 1 }}>
+                {Object.entries(grouped).map(([day, dayExercises]) => (
+                  <div key={day} style={{ marginBottom: '20px' }}>
+                    <div style={{
+                      display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px',
+                      fontFamily: 'var(--font-display)', fontSize: '14px', letterSpacing: '0.06em', color: 'var(--accent)'
+                    }}>
+                      <span>{day.toUpperCase()}</span>
+                      <span style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-body)' }}>{dayExercises.length} exercises</span>
+                    </div>
+                    {dayExercises.map((ex, i) => (
+                      <div key={i} style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        padding: '8px 12px', background: 'var(--bg-elevated)',
+                        borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)',
+                        marginBottom: '4px'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <span style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'var(--accent-dim)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: '700' }}>{i + 1}</span>
+                          <span style={{ fontSize: '13px', fontWeight: '600' }}>{ex.exercise}</span>
+                        </div>
+                        <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>{ex.sets} × {ex.reps}</span>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+              {/* Footer */}
+              <div style={{ padding: '16px 24px', borderTop: '1px solid var(--border)', display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                <button onClick={() => setReviewPlan(null)} className="btn btn-ghost" style={{ borderRadius: '8px' }}>CLOSE</button>
+                <button onClick={() => { adoptPlan(reviewPlan); setReviewPlan(null); }} className="btn btn-primary" style={{ borderRadius: '8px' }}>
+                  ADOPT PROGRAM
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

@@ -4,7 +4,7 @@ import {
   Chart as ChartJS, CategoryScale, LinearScale, PointElement,
   LineElement, BarElement, Title, Tooltip, Legend, Filler
 } from 'chart.js';
-import { dashboardAPI, waterAPI } from '../utils/api';
+import { dashboardAPI } from '../utils/api';
 import { useProfile } from '../context/ProfileContext';
 import { 
   RefreshCw, Scale, Flame, Droplets, Trophy, 
@@ -28,7 +28,6 @@ export default function Dashboard({ onNavigate }) {
   const { formatWeight, weightUnit } = useProfile();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [waterAmount, setWaterAmount] = useState('');
   const [isSyncing, setIsSyncing] = useState(false);
   // Macro calculator inputs
   const [calcWeight, setCalcWeight] = useState('');
@@ -88,16 +87,6 @@ export default function Dashboard({ onNavigate }) {
       fat: parseInt(macroGoalDraft.fat) || 0
     });
     setEditingMacroGoals(false);
-  };
-
-  const handleWaterLog = async (e) => {
-    e.preventDefault();
-    if (!waterAmount) return;
-    try {
-      await waterAPI.log({ date: new Date().toISOString().split('T')[0], amount_ml: waterAmount });
-      setWaterAmount('');
-      fetchData();
-    } catch {}
   };
 
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
@@ -265,26 +254,7 @@ export default function Dashboard({ onNavigate }) {
               )}
             </div>
 
-            <div className="card">
-              <div className="flex items-center justify-between" style={{ marginBottom: '16px' }}>
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: '14px', letterSpacing: '0.06em' }}>WATER INTAKE</div>
-                <div style={{ display: 'flex', gap: '4px' }}>
-                  {[250, 500].map(amt => (
-                    <button key={amt} onClick={async () => {
-                      await waterAPI.log({ date: new Date().toISOString().split('T')[0], amount_ml: amt });
-                      fetchData();
-                    }} className="btn btn-ghost" style={{ padding: '2px 8px', fontSize: '10px' }}>+{amt}</button>
-                  ))}
-                </div>
-              </div>
-              <div style={{ background: 'var(--bg-elevated)', borderRadius: '100px', height: '32px', position: 'relative', overflow: 'hidden', marginBottom: '16px', border: '1px solid var(--border)' }}>
-                <div style={{ height: '100%', width: `${Math.min(waterToday / 2500 * 100, 100)}%`, background: 'linear-gradient(90deg, #2ed5ff, #1e90ff)', transition: 'width 0.8s cubic-bezier(0.4, 0, 0.2, 1)' }} />
-              </div>
-              <form onSubmit={handleWaterLog} style={{ display: 'flex', gap: '8px' }}>
-                <input type="number" step="50" className="input" style={{ flex: 1, height: '36px' }} placeholder="Log ml..." value={waterAmount} onChange={e => setWaterAmount(e.target.value)} />
-                <button type="submit" className="btn btn-primary" style={{ height: '36px', padding: '0 16px' }}>ADD</button>
-              </form>
-            </div>
+
           </div>
 
           <div className="grid-2" style={{ marginBottom: '24px' }}>
