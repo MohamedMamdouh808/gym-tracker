@@ -793,10 +793,11 @@ app.get('/api/reports/weekly', async (req, res) => {
 });
 
 // ============ INBODY SCAN (AI Vision) ============
-const INBODY_EXTRACTION_PROMPT = `You are analyzing an InBody body composition scan report image.
-Extract ALL numerical values you can see in the image. Return ONLY a valid JSON object with these fields (use null if a value is not found):
+const INBODY_EXTRACTION_PROMPT = `You are an expert medical OCR AI specializing in analyzing body composition scan reports and thermal printout receipts (InBody, Tanita, Accuniq, etc.) in any language, including English and Arabic.
+
+Extract ALL numerical values from the image. Return ONLY a valid JSON object matching this exact schema (use null if a field is missing or not found):
 {
-  "date": "YYYY-MM-DD or null",
+  "date": "YYYY-MM-DD string or null",
   "weight": number or null,
   "body_fat_percent": number or null,
   "body_fat_mass": number or null,
@@ -823,7 +824,25 @@ Extract ALL numerical values you can see in the image. Return ONLY a valid JSON 
   "age": number or null,
   "gender": "male" or "female" or null
 }
-Return ONLY the JSON, no markdown, no explanation.`;
+
+Arabic Terminology Reference Guide for Thermal Printouts & Reports:
+- التاريخ / Date => "date" (format as YYYY-MM-DD, e.g. 2026/7/26 -> 2026-07-26)
+- الوزن / Weight => "weight" (e.g. 81.8)
+- الطول / Height => "height" (e.g. 167.9)
+- العمر / Age => "age"
+- الجنس (ذكر/أنثى) => "gender" ("male" for ذكر, "female" for أنثى)
+- نسبة دهون الجسم / Body Fat % => "body_fat_percent" (e.g. 27.3)
+- كتلة الدهون / Body Fat Mass => "body_fat_mass"
+- دهون الحشوية / Visceral Fat Level => "visceral_fat_level" (e.g. 11.2)
+- كتلة العضلات / Muscle Mass => "skeletal_muscle_mass" (e.g. 56.2)
+- نسبة الماء في الجسم / Body Water => "total_body_water" (e.g. 53.8)
+- مؤشر كتلة الجسم / BMI => "bmi" (e.g. 29.0)
+- معدل الحرق اليومي / BMR => "bmr" (e.g. 1930)
+- البروتين / Protein => "protein"
+- المعادن / Minerals => "minerals"
+
+IMPORTANT:
+- Return ONLY the JSON object. Do not include markdown headers, code blocks, or extra conversation.`;
 
 app.post('/api/inbody/scan', upload.single('image'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
@@ -836,106 +855,142 @@ app.post('/api/inbody/scan', upload.single('image'), async (req, res) => {
 
   // --- PRIMARY: Groq Vision ---
   if (process.env.GROQ_API_KEY) {
-    try {
-      const groqRes = await groq.chat.completions.create({
-        model: 'meta-llama/llama-4-scout-17b-16e-instruct',
-        messages: [
-          {
-            role: 'user',
-            content: [
-              { type: 'text', text: INBODY_EXTRACTION_PROMPT },
-              { type: 'image_url', image_url: { url: `data:${mimeType};base64,${imageBase64}` } }
-            ]
-          }
-        ],
-        temperature: 0.1,
-        max_tokens: 1024,
-        response_format: { type: 'json_object' }
-      });
-      const rawText = groqRes.choices[0]?.message?.content || '';
-      extracted = JSON.parse(rawText);
-      console.log('✅ InBody extracted via Groq Vision');
-    } catch (groqErr) {
-      console.error('Groq Vision failed, falling back to Gemini:', groqErr.message);
+    const groqModels = ['llama-3.2-11b-vision-preview', 'llama-3.2-90b-vision-preview'];
+    for (const modelName of groqModels) {
+      try {
+        const groqRes = await groq.chat.completions.create({
+          model: modelName,
+          messages: [
+            {
+              role: 'user',
+              content: [
+                { type: 'text', text: INBODY_EXTRACTION_PROMPT },
+                { type: 'image_url', image_url: { url: `data:${mimeType};base64,${imageBase64}` } }
+              ]
+            }
+          ],
+          temperature: 0.1,
+          max_tokens: 1024,
+          response_format: { type: 'json_object' }
+        });
+        const rawText = groqRes.choices[0]?.message?.content || '';
+        extracted = JSON.parse(rawText);
+        console.log(`✅ InBody extracted via Groq Vision (${modelName})`);
+        break;
+      } catch (groqErr) {
+        console.error(`Groq Vision (${modelName}) failed:`, groqErr.message);
+      }
     }
   }
 
   // --- FALLBACK: Gemini Vision ---
   if (!extracted && process.env.GEMINI_API_KEY) {
-    try {
-      const geminiModel = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-      const result = await geminiModel.generateContent([
-        INBODY_EXTRACTION_PROMPT,
-        { inlineData: { mimeType, data: imageBase64 } }
-      ]);
-      let rawText = result.response.text().trim();
-      // Strip markdown code fences if present
-      rawText = rawText.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
-      extracted = JSON.parse(rawText);
-      console.log('✅ InBody extracted via Gemini Vision');
-    } catch (gemErr) {
-      console.error('Gemini Vision also failed:', gemErr.message);
-      return res.status(500).json({ error: 'AI vision extraction failed. Please try a clearer image.' });
+    const geminiModels = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash-8b', 'gemini-1.5-pro'];
+    for (const modelName of geminiModels) {
+      try {
+        const geminiModel = genAI.getGenerativeModel({ model: modelName });
+        const result = await geminiModel.generateContent([
+          INBODY_EXTRACTION_PROMPT,
+          { inlineData: { mimeType, data: imageBase64 } }
+        ]);
+        let rawText = result.response.text().trim();
+        // Extract JSON substring if wrapped in markdown or extra text
+        const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          rawText = jsonMatch[0];
+        }
+        extracted = JSON.parse(rawText);
+        console.log(`✅ InBody extracted via Gemini Vision (${modelName})`);
+        break;
+      } catch (gemErr) {
+        console.error(`Gemini Vision (${modelName}) failed:`, gemErr.message);
+      }
     }
   }
 
   if (!extracted) {
-    return res.status(500).json({ error: 'No AI provider available for vision extraction.' });
+    return res.status(500).json({ error: 'AI vision extraction failed. Please try a clearer image or enter metrics manually.' });
   }
 
+  // Helper functions for robust database insertion
+  const sanitizeNumber = (val) => {
+    if (val === null || val === undefined || val === 'null') return null;
+    const num = parseFloat(val);
+    return isNaN(num) ? null : num;
+  };
+
+  // Use for integer DB columns (bmr, age, metabolic_age) to prevent decimal type errors
+  const sanitizeInt = (val) => {
+    const num = sanitizeNumber(val);
+    return num === null ? null : Math.round(num);
+  };
+
+  const sanitizeDate = (dateStr) => {
+    if (!dateStr || dateStr === 'null' || typeof dateStr !== 'string') return new Date().toISOString().split('T')[0];
+    const clean = dateStr.trim().replace(/\//g, '-');
+    const d = new Date(clean);
+    if (isNaN(d.getTime())) return new Date().toISOString().split('T')[0];
+    return d.toISOString().split('T')[0];
+  };
+
   // Save to inbody_scans table (full record)
-  const scanDate = extracted.date || new Date().toISOString().split('T')[0];
+  const scanDate = sanitizeDate(extracted.date);
   const authSupabase = getAuthenticatedSupabase(req);
+
+  const insertPayload = {
+    user_id,
+    date: scanDate,
+    weight: sanitizeNumber(extracted.weight),
+    body_fat_percent: sanitizeNumber(extracted.body_fat_percent),
+    body_fat_mass: sanitizeNumber(extracted.body_fat_mass),
+    skeletal_muscle_mass: sanitizeNumber(extracted.skeletal_muscle_mass),
+    lean_body_mass: sanitizeNumber(extracted.lean_body_mass),
+    total_body_water: sanitizeNumber(extracted.total_body_water),
+    protein: sanitizeNumber(extracted.protein),
+    minerals: sanitizeNumber(extracted.minerals),
+    bmi: sanitizeNumber(extracted.bmi),
+    bmr: sanitizeInt(extracted.bmr),
+    visceral_fat_level: sanitizeNumber(extracted.visceral_fat_level),
+    metabolic_age: sanitizeInt(extracted.metabolic_age),
+    height: sanitizeNumber(extracted.height),
+    age: sanitizeInt(extracted.age),
+    gender: extracted.gender && extracted.gender !== 'null' ? String(extracted.gender) : null,
+    segment_data: {
+      right_arm_muscle: sanitizeNumber(extracted.right_arm_muscle),
+      left_arm_muscle: sanitizeNumber(extracted.left_arm_muscle),
+      trunk_muscle: sanitizeNumber(extracted.trunk_muscle),
+      right_leg_muscle: sanitizeNumber(extracted.right_leg_muscle),
+      left_leg_muscle: sanitizeNumber(extracted.left_leg_muscle),
+      right_arm_fat: sanitizeNumber(extracted.right_arm_fat),
+      left_arm_fat: sanitizeNumber(extracted.left_arm_fat),
+      trunk_fat: sanitizeNumber(extracted.trunk_fat),
+      right_leg_fat: sanitizeNumber(extracted.right_leg_fat),
+      left_leg_fat: sanitizeNumber(extracted.left_leg_fat),
+    }
+  };
 
   const { data: scanData, error: scanError } = await authSupabase
     .from('inbody_scans')
-    .insert([{
-      user_id,
-      date: scanDate,
-      weight: extracted.weight,
-      body_fat_percent: extracted.body_fat_percent,
-      body_fat_mass: extracted.body_fat_mass,
-      skeletal_muscle_mass: extracted.skeletal_muscle_mass,
-      lean_body_mass: extracted.lean_body_mass,
-      total_body_water: extracted.total_body_water,
-      protein: extracted.protein,
-      minerals: extracted.minerals,
-      bmi: extracted.bmi,
-      bmr: extracted.bmr,
-      visceral_fat_level: extracted.visceral_fat_level,
-      metabolic_age: extracted.metabolic_age,
-      height: extracted.height,
-      age: extracted.age,
-      gender: extracted.gender,
-      segment_data: {
-        right_arm_muscle: extracted.right_arm_muscle,
-        left_arm_muscle: extracted.left_arm_muscle,
-        trunk_muscle: extracted.trunk_muscle,
-        right_leg_muscle: extracted.right_leg_muscle,
-        left_leg_muscle: extracted.left_leg_muscle,
-        right_arm_fat: extracted.right_arm_fat,
-        left_arm_fat: extracted.left_arm_fat,
-        trunk_fat: extracted.trunk_fat,
-        right_leg_fat: extracted.right_leg_fat,
-        left_leg_fat: extracted.left_leg_fat,
-      }
-    }])
+    .insert([insertPayload])
     .select();
 
   if (scanError) {
-    console.warn('inbody_scans insert failed (table may not exist yet):', scanError.message);
+    console.error('❌ CRITICAL inbody_scans insert failed:', scanError.message);
+  } else {
+    console.log('✅ InBody scan successfully saved to DB:', scanData?.[0]?.id);
   }
 
   // Also auto-log to weight_logs if weight is present
   let weightLogData = null;
-  if (extracted.weight) {
+  const parsedWeight = sanitizeNumber(extracted.weight);
+  if (parsedWeight) {
     const { data: wData } = await authSupabase
       .from('weight_logs')
       .insert([{
         user_id,
         date: scanDate,
-        weight: Math.round(extracted.weight * 10) / 10,
-        body_fat: extracted.body_fat_percent ? Math.round(extracted.body_fat_percent * 10) / 10 : null
+        weight: Math.round(parsedWeight * 10) / 10,
+        body_fat: sanitizeNumber(extracted.body_fat_percent) ? Math.round(sanitizeNumber(extracted.body_fat_percent) * 10) / 10 : null
       }])
       .select();
     weightLogData = wData?.[0] || null;
@@ -958,7 +1013,7 @@ app.get('/api/inbody/history', async (req, res) => {
   const { data, error } = await getAuthenticatedSupabase(req)
     .from('inbody_scans')
     .select('*')
-    .eq('user_id', user_id)
+    .or(`user_id.eq.${user_id},user_id.eq.${DEFAULT_USER_ID}`)
     .order('date', { ascending: false })
     .limit(limit);
 
@@ -973,7 +1028,7 @@ app.get('/api/inbody/latest', async (req, res) => {
   const { data, error } = await getAuthenticatedSupabase(req)
     .from('inbody_scans')
     .select('*')
-    .eq('user_id', user_id)
+    .or(`user_id.eq.${user_id},user_id.eq.${DEFAULT_USER_ID}`)
     .not('weight', 'is', null) // Ignore empty scans
     .order('date', { ascending: false })
     .limit(1)

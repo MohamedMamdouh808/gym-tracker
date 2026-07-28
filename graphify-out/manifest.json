@@ -1,0 +1,227 @@
+{
+  "C:\\Users\\toshiba\\Desktop\\gymtracker\\backend\\gymtracker-data.json": {
+    "mtime": 1779117129.7653441,
+    "ast_hash": "68c2d580a6100fd2bc1b8ac57c2d390f",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\toshiba\\Desktop\\gymtracker\\backend\\package.json": {
+    "mtime": 1779117129.796596,
+    "ast_hash": "a59cbb62d5c87f5e046d5c3ecdcbd4a7",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\toshiba\\Desktop\\gymtracker\\backend\\server.js": {
+    "mtime": 1779558148.3514397,
+    "ast_hash": "9e0cd1891efbe1a5ca460de7070b4354",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\toshiba\\Desktop\\gymtracker\\backend\\test-profiles.js": {
+    "mtime": 1779117129.796596,
+    "ast_hash": "395467e0eb73cbccb517fc481c40335c",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\toshiba\\Desktop\\gymtracker\\backend\\test-save.js": {
+    "mtime": 1779117129.796596,
+    "ast_hash": "303138c50757970704f91fe0afa5ed11",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\toshiba\\Desktop\\gymtracker\\backend\\vercel.json": {
+    "mtime": 1779117129.8122199,
+    "ast_hash": "06f68dbad08e06c74df76229b21fc79d",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\toshiba\\Desktop\\gymtracker\\backend\\api\\index.js": {
+    "mtime": 1779117396.6841638,
+    "ast_hash": "fbbba1dd6eb74f552eeb13ea26348f84",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\toshiba\\Desktop\\gymtracker\\database\\community_programs.sql": {
+    "mtime": 1779117129.908817,
+    "ast_hash": "79d50ca055df9e83d7992e6474b249c3",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\toshiba\\Desktop\\gymtracker\\database\\Create InBody Scans Table.sql": {
+    "mtime": 1779117129.8408456,
+    "ast_hash": "3a508e5d60ff394bd9727fef63859ac0",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\toshiba\\Desktop\\gymtracker\\database\\Meal Access RLS Policies.sql": {
+    "mtime": 1779117129.860851,
+    "ast_hash": "9283176fc36f2d31f260edc5ef61e4df",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\toshiba\\Desktop\\gymtracker\\database\\Nutrition, Workouts, and Weight Tracking Schema.sql": {
+    "mtime": 1779117129.8729799,
+    "ast_hash": "ea0f3a4ab25c6fcd9c57b04d79f73523",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\toshiba\\Desktop\\gymtracker\\database\\profiles.sql": {
+    "mtime": 1779117129.92432,
+    "ast_hash": "20ac2e43864bf31ee606160940a73a80",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\toshiba\\Desktop\\gymtracker\\database\\Water Logs and Personal Records Tables with RLS.sql": {
+    "mtime": 1779117129.8793,
+    "ast_hash": "f9580f18876e796d63ee2f924ebbe99c",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\toshiba\\Desktop\\gymtracker\\database\\Workout logs row-level access control.sql": {
+    "mtime": 1779117129.8847873,
+    "ast_hash": "f48d4f10c72543f1e57f209f27e760f7",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\toshiba\\Desktop\\gymtracker\\frontend\\package.json": {
+    "mtime": 1779121361.3979237,
+    "ast_hash": "41cace5ee93c413646fba2032008f410",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\toshiba\\Desktop\\gymtracker\\frontend\\src\\App.jsx": {
+    "mtime": 1779227261.6973276,
+    "ast_hash": "7cac9594c0512613d504bf478ad40d66",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\toshiba\\Desktop\\gymtracker\\frontend\\src\\index.js": {
+    "mtime": 1779117130.0567617,
+    "ast_hash": "f79fef2d8f965f6c56b1aa137a0d80d9",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\toshiba\\Desktop\\gymtracker\\frontend\\src\\components\\DeleteButton.jsx": {
+    "mtime": 1779117130.0567617,
+    "ast_hash": "55e4fd8c98ea0e71e9f8d6f0153d4ca0",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\toshiba\\Desktop\\gymtracker\\frontend\\src\\components\\Sidebar.jsx": {
+    "mtime": 1779121413.6820335,
+    "ast_hash": "b5c84a20e7f981b773233dce35d50437",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\toshiba\\Desktop\\gymtracker\\frontend\\src\\context\\AuthContext.js": {
+    "mtime": 1779117130.0567617,
+    "ast_hash": "8a7868cbf48a00c0c16f3ec2237a82c1",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\toshiba\\Desktop\\gymtracker\\frontend\\src\\context\\ProfileContext.js": {
+    "mtime": 1779227204.441773,
+    "ast_hash": "5b225bff78554ed7d5837963ffa93589",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\toshiba\\Desktop\\gymtracker\\frontend\\src\\hooks\\useToast.js": {
+    "mtime": 1779117130.0567617,
+    "ast_hash": "3d5bd619a39b928e5df30a2ae26df0f9",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\toshiba\\Desktop\\gymtracker\\frontend\\src\\pages\\AICoach.jsx": {
+    "mtime": 1779117130.0725284,
+    "ast_hash": "1973bc747276b3e53fda0500ef60668b",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\toshiba\\Desktop\\gymtracker\\frontend\\src\\pages\\Dashboard.jsx": {
+    "mtime": 1783233835.4446144,
+    "ast_hash": "b55829eec0022ef8e0afc1da61b758cd",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\toshiba\\Desktop\\gymtracker\\frontend\\src\\pages\\HealthCalculators.jsx": {
+    "mtime": 1779117130.0729318,
+    "ast_hash": "7302b961dbad24838f5b9e3e82ec238a",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\toshiba\\Desktop\\gymtracker\\frontend\\src\\pages\\InBodyScan.jsx": {
+    "mtime": 1779228388.3184998,
+    "ast_hash": "37b8d6190e53af4b26be86370274c523",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\toshiba\\Desktop\\gymtracker\\frontend\\src\\pages\\Login.jsx": {
+    "mtime": 1781702513.6791308,
+    "ast_hash": "bc113b0df078eab1e6ac7ac9cd316c87",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\toshiba\\Desktop\\gymtracker\\frontend\\src\\pages\\MealTracker.jsx": {
+    "mtime": 1781693886.2135532,
+    "ast_hash": "fb28e04022db23a67e70a873b953ffb1",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\toshiba\\Desktop\\gymtracker\\frontend\\src\\pages\\Profile.jsx": {
+    "mtime": 1779227338.4489553,
+    "ast_hash": "c79b78ea6cd44d7ad36c7715fde7f619",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\toshiba\\Desktop\\gymtracker\\frontend\\src\\pages\\Progress.jsx": {
+    "mtime": 1781693236.7116015,
+    "ast_hash": "8220813146755b46ab3abaaf8afae6dc",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\toshiba\\Desktop\\gymtracker\\frontend\\src\\pages\\WeightTracker.jsx": {
+    "mtime": 1779227464.199368,
+    "ast_hash": "131e7979ef27ac36bf4dc8d43945d232",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\toshiba\\Desktop\\gymtracker\\frontend\\src\\pages\\WorkoutLog.jsx": {
+    "mtime": 1779228040.0318062,
+    "ast_hash": "f2ab68d91ce8f1be6843944118850a48",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\toshiba\\Desktop\\gymtracker\\frontend\\src\\pages\\WorkoutPlanner.jsx": {
+    "mtime": 1783235207.1933389,
+    "ast_hash": "e7e1595d0c19a52985c624ad563b30c6",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\toshiba\\Desktop\\gymtracker\\frontend\\src\\utils\\api.js": {
+    "mtime": 1779558263.125156,
+    "ast_hash": "6e48d9a81ae74a3b9518a1102902efa5",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\toshiba\\Desktop\\gymtracker\\frontend\\src\\utils\\supabase.js": {
+    "mtime": 1779117130.1063523,
+    "ast_hash": "f902b6fb9860874066235be5f6fa156b",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\toshiba\\Desktop\\gymtracker\\frontend\\src\\utils\\supabaseClient.js": {
+    "mtime": 1779117130.1063523,
+    "ast_hash": "2e5e1e9db422968f511350975f3ee4e9",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\toshiba\\Desktop\\gymtracker\\CLAUDE.md": {
+    "mtime": 1779193462.84909,
+    "ast_hash": "b95732bd5208c3648336d3d6b21f2a97",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\toshiba\\Desktop\\gymtracker\\README.md": {
+    "mtime": 1779117129.749725,
+    "ast_hash": "0f68c8598f00584fb55b0b88ab40c7c5",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\toshiba\\Desktop\\gymtracker\\.agents\\rules\\graphify.md": {
+    "mtime": 1779209208.8659558,
+    "ast_hash": "a0e4d192b9e2e17256124dbfc8e24e6a",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\toshiba\\Desktop\\gymtracker\\.agents\\workflows\\graphify.md": {
+    "mtime": 1779209208.871427,
+    "ast_hash": "84de69efd46ab0b8430393bd4188f8f2",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\toshiba\\Desktop\\gymtracker\\frontend\\public\\index.html": {
+    "mtime": 1779117130.0397782,
+    "ast_hash": "cd2cd1bb2c3caa3d23f55ecc749e7e4d",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\toshiba\\Desktop\\gymtracker\\extras\\Example-Result-Sheet_270S-Body-Composition-ENG_240731_out_page-0001.jpg": {
+    "mtime": 1779117129.990147,
+    "ast_hash": "0eb441acb987fc40237816029eff74e0",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\toshiba\\Desktop\\gymtracker\\extras\\high-resolution-color-logo.png": {
+    "mtime": 1779117129.990147,
+    "ast_hash": "2f50d091ef9acd8c78e598d8dd2ea7e7",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\toshiba\\Desktop\\gymtracker\\database\\saved_foods.sql": {
+    "mtime": 1779558077.924523,
+    "ast_hash": "67216330685b38c5f1bd00bf9b86158b",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\toshiba\\Desktop\\gymtracker\\extras\\GymTracker-AI-05-23-2026_08_59_PM.png": {
+    "mtime": 1779559181.4912183,
+    "ast_hash": "f8a43bf5d4364c125daaa59b818dd9b2",
+    "semantic_hash": ""
+  }
+}

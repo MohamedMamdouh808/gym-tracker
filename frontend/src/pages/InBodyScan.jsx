@@ -266,68 +266,86 @@ function HistoryRow({ scan, onExpand, expanded, onDelete, onUpdate }) {
           </div>
 
           {/* SEGMENT MUSCLE ANALYSIS */}
-          <div style={{ marginTop: '16px' }}>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: '11px', letterSpacing: '0.1em', color: 'var(--green)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ width: '3px', height: '12px', background: 'var(--green)', borderRadius: '2px' }}></span>
-              SEGMENT MUSCLE ANALYSIS
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '8px' }}>
-              {segmentMuscleMetrics.map(({ key, label, unit }) => {
-                const val = getSegmentValue(key);
-                if (!isEditing && (val === null || val === undefined || String(val) === 'null')) return null;
-                return (
-                  <div key={key} style={{ padding: '12px', background: 'var(--bg-elevated)', borderRadius: '8px', border: '1px solid var(--border)' }}>
-                    <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>{label}</div>
-                    {isEditing ? (
-                      <input 
-                        type="number" 
-                        step="0.1"
-                        value={val || ''} 
-                        onChange={e => setEditForm(prev => ({ ...prev, segment_data: { ...prev.segment_data, [key]: e.target.value } }))}
-                        style={{ width: '100%', background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'white', padding: '6px 8px', borderRadius: '4px', fontSize: '14px' }}
-                      />
-                    ) : (
-                      <div style={{ fontSize: '18px', fontWeight: '700', color: 'var(--green)', fontFamily: 'var(--font-display)' }}>
-                        {val} <span style={{ fontSize: '11px', fontWeight: '400', color: 'var(--text-muted)' }}>{unit}</span>
+          {(() => {
+            const hasMuscleData = isEditing || segmentMuscleMetrics.some(({ key }) => {
+              const val = getSegmentValue(key);
+              return val !== null && val !== undefined && String(val) !== 'null';
+            });
+            if (!hasMuscleData) return null;
+            return (
+              <div style={{ marginTop: '16px' }}>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: '11px', letterSpacing: '0.1em', color: 'var(--green)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ width: '3px', height: '12px', background: 'var(--green)', borderRadius: '2px' }}></span>
+                  SEGMENT MUSCLE ANALYSIS
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '8px' }}>
+                  {segmentMuscleMetrics.map(({ key, label, unit }) => {
+                    const val = getSegmentValue(key);
+                    if (!isEditing && (val === null || val === undefined || String(val) === 'null')) return null;
+                    return (
+                      <div key={key} style={{ padding: '12px', background: 'var(--bg-elevated)', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                        <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>{label}</div>
+                        {isEditing ? (
+                          <input 
+                            type="number" 
+                            step="0.1"
+                            value={val || ''} 
+                            onChange={e => setEditForm(prev => ({ ...prev, segment_data: { ...prev.segment_data, [key]: e.target.value } }))}
+                            style={{ width: '100%', background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'white', padding: '6px 8px', borderRadius: '4px', fontSize: '14px' }}
+                          />
+                        ) : (
+                          <div style={{ fontSize: '18px', fontWeight: '700', color: 'var(--green)', fontFamily: 'var(--font-display)' }}>
+                            {val} <span style={{ fontSize: '11px', fontWeight: '400', color: 'var(--text-muted)' }}>{unit}</span>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
 
           {/* SEGMENT FAT ANALYSIS */}
-          <div style={{ marginTop: '16px' }}>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: '11px', letterSpacing: '0.1em', color: '#ff9f43', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ width: '3px', height: '12px', background: '#ff9f43', borderRadius: '2px' }}></span>
-              SEGMENT FAT ANALYSIS
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '8px' }}>
-              {segmentFatMetrics.map(({ key, label, unit }) => {
-                const val = getSegmentValue(key);
-                if (!isEditing && (val === null || val === undefined || String(val) === 'null')) return null;
-                return (
-                  <div key={key} style={{ padding: '12px', background: 'var(--bg-elevated)', borderRadius: '8px', border: '1px solid var(--border)' }}>
-                    <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>{label}</div>
-                    {isEditing ? (
-                      <input 
-                        type="number" 
-                        step="0.1"
-                        value={val || ''} 
-                        onChange={e => setEditForm(prev => ({ ...prev, segment_data: { ...prev.segment_data, [key]: e.target.value } }))}
-                        style={{ width: '100%', background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'white', padding: '6px 8px', borderRadius: '4px', fontSize: '14px' }}
-                      />
-                    ) : (
-                      <div style={{ fontSize: '18px', fontWeight: '700', color: '#ff9f43', fontFamily: 'var(--font-display)' }}>
-                        {val} <span style={{ fontSize: '11px', fontWeight: '400', color: 'var(--text-muted)' }}>{unit}</span>
+          {(() => {
+            const hasFatData = isEditing || segmentFatMetrics.some(({ key }) => {
+              const val = getSegmentValue(key);
+              return val !== null && val !== undefined && String(val) !== 'null';
+            });
+            if (!hasFatData) return null;
+            return (
+              <div style={{ marginTop: '16px' }}>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: '11px', letterSpacing: '0.1em', color: '#ff9f43', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ width: '3px', height: '12px', background: '#ff9f43', borderRadius: '2px' }}></span>
+                  SEGMENT FAT ANALYSIS
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '8px' }}>
+                  {segmentFatMetrics.map(({ key, label, unit }) => {
+                    const val = getSegmentValue(key);
+                    if (!isEditing && (val === null || val === undefined || String(val) === 'null')) return null;
+                    return (
+                      <div key={key} style={{ padding: '12px', background: 'var(--bg-elevated)', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                        <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>{label}</div>
+                        {isEditing ? (
+                          <input 
+                            type="number" 
+                            step="0.1"
+                            value={val || ''} 
+                            onChange={e => setEditForm(prev => ({ ...prev, segment_data: { ...prev.segment_data, [key]: e.target.value } }))}
+                            style={{ width: '100%', background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'white', padding: '6px 8px', borderRadius: '4px', fontSize: '14px' }}
+                          />
+                        ) : (
+                          <div style={{ fontSize: '18px', fontWeight: '700', color: '#ff9f43', fontFamily: 'var(--font-display)' }}>
+                            {val} <span style={{ fontSize: '11px', fontWeight: '400', color: 'var(--text-muted)' }}>{unit}</span>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
 
           {/* PERSONAL INFO */}
           {(getValue('height') || getValue('age') || getValue('gender')) && (
@@ -408,7 +426,13 @@ export default function InBodyScan() {
     }
   };
 
+  // Fetch on mount so history is ready immediately
   useEffect(() => { fetchHistory(); }, []);
+
+  // Re-fetch whenever user switches to the History tab
+  useEffect(() => {
+    if (activeTab === 'history') fetchHistory();
+  }, [activeTab]);
 
   const handleDelete = async (id) => {
     try {
@@ -465,7 +489,11 @@ export default function InBodyScan() {
       if (json.weightLogged) {
         showToast('✅ Weight auto-logged to Weight Tracker', 'success');
       }
-      fetchHistory();
+      await fetchHistory();
+      if (json.scanId) {
+        setExpandedId(json.scanId);
+      }
+      setActiveTab('history');
     } catch (err) {
       showToast(err.toString() || 'Failed to analyze image', 'error');
     } finally {
